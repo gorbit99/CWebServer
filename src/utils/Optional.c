@@ -2,6 +2,7 @@
 
 #include <memory.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 struct Optional {
@@ -39,4 +40,105 @@ bool optional_has_value(Optional *optional) {
 
 void *optional_value_or(Optional *optional, void *placeholder) {
     return optional->has_value ? optional->data : placeholder;
+}
+
+TEST(optional_new) {
+    STARTTEST();
+
+    Optional *optional = optional_new(int32_t);
+
+    TESTASSERT(Data size should be 4, optional->data_size == 4);
+    TESTASSERT(Optional shouldnt have value, !optional->has_value);
+
+    ENDTEST();
+}
+
+TEST(optional_set) {
+    STARTTEST();
+
+    Optional *optional = optional_new(int32_t);
+    int i = 5;
+    optional_set(optional, &i);
+
+    TESTASSERT(Optional should have a value, optional->has_value);
+    TESTASSERT(The value should be 5, *(int *)optional->data == 5);
+
+    ENDTEST();
+}
+
+TEST(optional_reset_without_value) {
+    STARTTEST();
+
+    Optional *optional = optional_new(int32_t);
+    optional_reset(optional);
+
+    TESTASSERT(Optional still shouldnt have a value, !optional->has_value);
+
+    ENDTEST();
+}
+
+TEST(optional_reset_with_value) {
+    STARTTEST();
+
+    Optional *optional = optional_new(int32_t);
+    int i = 5;
+    optional_set(optional, &i);
+    optional_reset(optional);
+
+    TESTASSERT(Optional shouldnt have a value anymore, !optional->has_value);
+
+    ENDTEST();
+}
+
+TEST(optional_has_value) {
+    STARTTEST();
+
+    Optional *optional = optional_new(int32_t);
+
+    TESTASSERT(At the beginning it should be false,
+               !optional_has_value(optional));
+
+    int i = 5;
+    optional_set(optional, &i);
+
+    TESTASSERT(When set it should be true, optional_has_value(optional));
+
+    optional_reset(optional);
+
+    TESTASSERT(When reset it should be false, !optional_has_value(optional));
+
+    ENDTEST();
+}
+
+TEST(optional_value_or) {
+    STARTTEST();
+
+    Optional *optional = optional_new(int32_t);
+    int value_or = 5;
+
+    TESTASSERT(Without value it should be the or value,
+               *(int *)optional_value_or(optional, &value_or) == 5);
+
+    int value = 10;
+    optional_set(optional, &value);
+
+    TESTASSERT(With value it should be that,
+               *(int *)optional_value_or(optional, &value_or) == 10);
+
+    ENDTEST();
+}
+
+TEST(optional_tests) {
+    STARTTEST();
+
+    RUNTEST(optional_new);
+    RUNTEST(optional_set);
+    RUNTEST(optional_reset_without_value);
+    RUNTEST(optional_reset_with_value);
+    RUNTEST(optional_has_value);
+    RUNTEST(optional_value_or);
+
+    PRINTTESTSUITE(Optional);
+
+    ENDTEST();
 }
