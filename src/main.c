@@ -1,12 +1,16 @@
 #include "tests/framework.h"
+#include "utils/Hashmap.h"
 #include "utils/Optional.h"
+#include "utils/Vector.h"
 
 #include <stdio.h>
 
 TEST(test_suite) {
     STARTTEST();
 
-    RUNTEST(optional_tests);
+    RUNTEST(optional);
+    RUNTEST(vector);
+    RUNTEST(hashmap);
 
     ENDTEST();
 }

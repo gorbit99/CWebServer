@@ -21,4 +21,4 @@ bool optional_has_value(Optional *optional);
 
 void *optional_value_or(Optional *optional, void *placeholder);
 
-TEST(optional_tests);
+TEST(optional);
