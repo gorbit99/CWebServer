@@ -13,7 +13,7 @@ struct Vector {
     size_t capacity;
 };
 
-Vector *vector_new_base(size_t data_size) {
+Vector *_vector_new_base(size_t data_size) {
     Vector *result = (Vector *)malloc(sizeof(Vector));
 
     result->data_size = data_size;

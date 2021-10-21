@@ -4,11 +4,11 @@
 
 #include <stddef.h>
 
-#define vector_new(type) vector_new_base(sizeof(type))
+#define vector_new(type) _vector_new_base(sizeof(type))
 
 typedef struct Vector Vector;
 
-Vector *vector_new_base(size_t data_size);
+Vector *_vector_new_base(size_t data_size);
 
 void vector_free(Vector *vector);
 

@@ -26,9 +26,9 @@ struct Hashmap {
     int (*compare)(void *key1, void *key2);
 };
 
-Hashmap *hashmap_new_base(size_t key_size, size_t value_size,
-                          uint64_t (*hash_alg)(void *key),
-                          int (*compare)(void *key1, void *key2)) {
+Hashmap *_hashmap_new_base(size_t key_size, size_t value_size,
+                           uint64_t (*hash_alg)(void *key),
+                           int (*compare)(void *key1, void *key2)) {
     Hashmap *result = (Hashmap *)malloc(sizeof(Hashmap));
 
     result->key_size = key_size;

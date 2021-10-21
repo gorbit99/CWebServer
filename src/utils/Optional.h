@@ -5,11 +5,11 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#define optional_new(type) optional_new_base(sizeof(type))
+#define optional_new(type) _optional_new_base(sizeof(type))
 
 typedef struct Optional Optional;
 
-Optional *optional_new_base(size_t data_size);
+Optional *_optional_new_base(size_t data_size);
 
 void optional_free(Optional *optional);
 

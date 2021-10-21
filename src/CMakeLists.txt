@@ -4,14 +4,17 @@ set(SRC_FILES
     utils/Optional.h utils/Optional.c
     utils/Vector.h utils/Vector.c
     utils/Hashmap.h utils/Hashmap.c
+    utils/Errors.h utils/Errors.c
+    http/socket.h
+    http/socket/socket_linux.c
     )
 
 add_executable(server "${SRC_FILES}")
 
 set_target_properties(server
     PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY_DEBUG "./bin/debug"
-    RUNTIME_OUTPUT_DIRECTORY_RELEASE "./bin/release"
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/bin/debug"
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin/release"
     EXPORT_COMPILE_COMMANDS ${GENERATE_COMPILE_COMMANDS}
     )
 
