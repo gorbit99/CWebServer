@@ -23,18 +23,25 @@ int main(void) {
 #else
     Socket *socket = socket_new("localhost", 8000);
 
-    while (!socket_has_pending_connection(socket)) {
+    while (true) {
+        while (!socket_has_pending_connection(socket)) {
+        }
+
+        Connection *connection = socket_get_connection(socket);
+
+        char *hostname = connection_get_ip(connection);
+
+        printf("Hostname: %s\n", hostname);
+
+        char line[100];
+        connection_scanf(connection, "%[^\n]", line);
+
+        printf("%s\n", line);
+
+        free(hostname);
+
+        connection_free(connection);
     }
-
-    Connection *connection = socket_get_connection(socket);
-
-    char *hostname = connection_get_ip(connection);
-
-    printf("Hostname: %s\n", hostname);
-
-    free(hostname);
-
-    connection_free(connection);
 
     socket_free(socket);
     return 0;

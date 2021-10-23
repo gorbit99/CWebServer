@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <poll.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,6 +26,7 @@ struct Socket {
 struct Connection {
     int fd;
     struct sockaddr_in address;
+    FILE *file_equivalent;
 };
 
 static int socket_create() {
@@ -135,10 +137,15 @@ Connection *socket_get_connection(Socket *socket) {
     result->fd = connection_fd;
     result->address = addr;
 
+    FILE *file = fdopen(connection_fd, "rw");
+    result->file_equivalent = file;
+
     return result;
 }
 
 void connection_free(Connection *connection) {
+    fclose(connection->file_equivalent);
+    close(connection->fd);
     free(connection);
 }
 
@@ -149,4 +156,26 @@ char *connection_get_ip(Connection *connection) {
     strcpy(result, ip);
 
     return result;
+}
+
+int connection_scanf(Connection *connection, char *format, ...) {
+    va_list args;
+    va_start(args, format);
+
+    int res = vfscanf(connection->file_equivalent, format, args);
+
+    va_end(args);
+
+    return res;
+}
+
+int connection_printf(Connection *connection, char *format, ...) {
+    va_list args;
+    va_start(args, format);
+
+    int res = vfprintf(connection->file_equivalent, format, args);
+
+    va_end(args);
+
+    return res;
 }

@@ -17,3 +17,7 @@ Connection *socket_get_connection(Socket *socket);
 void connection_free(Connection *connection);
 
 char *connection_get_ip(Connection *connection);
+
+int connection_scanf(Connection *connection, char *format, ...);
+
+int connection_printf(Connection *connection, char *format, ...);
