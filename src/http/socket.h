@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../utils/string.h"
+
 #include <stdbool.h>
 
 typedef struct Socket Socket;
@@ -21,3 +23,11 @@ char *connection_get_ip(Connection *connection);
 int connection_scanf(Connection *connection, char *format, ...);
 
 int connection_printf(Connection *connection, char *format, ...);
+
+String *connection_read_upto(Connection *connection, char *delims);
+
+String *connection_read_line(Connection *connection);
+
+String *connection_read_word(Connection *connection);
+
+String *connection_read_len(Connection *connection, size_t len);

@@ -90,20 +90,13 @@ static void socket_set_options(int socket_fd) {
         eprintf("Couldn't set socket option: %s\n", strerror(errno));
         exit(-1);
     }
-
-    if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEPORT, &value, sizeof(value))
-        == -1) {
-        printf("%d\n", errno);
-        eprintf("Couldn't set socket option: %s\n", strerror(errno));
-        exit(-1);
-    }
 }
 
 Socket *socket_new(char *addr, short port) {
     int socket_fd = socket_create();
+    socket_set_options(socket_fd);
     socket_bind(socket_fd, addr, port);
     socket_start_listening(socket_fd);
-    socket_set_options(socket_fd);
 
     Socket *result = (Socket *)malloc(sizeof(Socket));
     result->fd = socket_fd;
@@ -114,6 +107,7 @@ Socket *socket_new(char *addr, short port) {
 }
 
 void socket_free(Socket *socket) {
+    shutdown(socket->fd, SHUT_RDWR);
     close(socket->fd);
     free(socket);
 }
@@ -173,9 +167,25 @@ int connection_printf(Connection *connection, char *format, ...) {
     va_list args;
     va_start(args, format);
 
-    int res = vfprintf(connection->file_equivalent, format, args);
+    int res = dprintf(connection->fd, format, args);
 
     va_end(args);
 
     return res;
+}
+
+String *connection_read_upto(Connection *connection, char *delims) {
+    return string_read_upto(connection->file_equivalent, delims);
+}
+
+String *connection_read_line(Connection *connection) {
+    return string_read_line(connection->file_equivalent);
+}
+
+String *connection_read_word(Connection *connection) {
+    return string_read_word(connection->file_equivalent);
+}
+
+String *connection_read_len(Connection *connection, size_t len) {
+    return string_read_len(connection->file_equivalent, len);
 }

@@ -24,4 +24,6 @@ Optional *hashmap_get(Hashmap *hashmap, void *key);
 
 bool hashmap_contains_key(Hashmap *hashmap, void *key);
 
+void hashmap_foreach(Hashmap *hashmap, void (*func)(void *key, void *value));
+
 TEST(hashmap);

@@ -5,8 +5,10 @@ set(SRC_FILES
     utils/Vector.h utils/Vector.c
     utils/Hashmap.h utils/Hashmap.c
     utils/Errors.h utils/Errors.c
+    utils/string.h utils/string.c
     http/socket.h
     http/socket/socket_linux.c
+    http/request.h http/request.c
     )
 
 add_executable(server "${SRC_FILES}")

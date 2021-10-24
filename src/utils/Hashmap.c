@@ -48,17 +48,17 @@ Hashmap *_hashmap_new_base(size_t key_size, size_t value_size,
 }
 
 static Vector *hashmap_get_bucket(Hashmap *hashmap, size_t index) {
-    Vector *bucket = *(Vector **)vector_get(hashmap->buckets, index);
+    Vector *bucket = vector_get(hashmap->buckets, index, Vector *);
 
     return bucket;
 }
 
 void hashmap_bucket_free(Vector *bucket) {
     for (size_t i = 0; i < vector_size(bucket); i++) {
-        HashmapEntry *entry = (HashmapEntry *)vector_get(bucket, i);
+        HashmapEntry entry = vector_get(bucket, i, HashmapEntry);
 
-        free(entry->key);
-        free(entry->value);
+        free(entry.key);
+        free(entry.value);
     }
 
     vector_free(bucket);
@@ -88,9 +88,9 @@ static int64_t hashmap_bucket_bin_search(Hashmap *hashmap, Vector *bucket,
     while (min_index != max_index) {
         size_t center_index = (min_index + max_index) / 2;
 
-        HashmapEntry *entry = vector_get(bucket, center_index);
+        HashmapEntry entry = vector_get(bucket, center_index, HashmapEntry);
 
-        int compared = hashmap->compare(key, entry->key);
+        int compared = hashmap->compare(key, entry.key);
 
         if (compared < 0) {
             max_index = center_index - 1;
@@ -120,14 +120,14 @@ static void hashmap_bucket_insert(Hashmap *hashmap, Vector *bucket, void *key,
         return;
     }
 
-    HashmapEntry *entry = vector_get(bucket, index);
+    HashmapEntry entry = vector_get(bucket, index, HashmapEntry);
 
-    int compared = hashmap->compare(key, entry->key);
+    int compared = hashmap->compare(key, entry.key);
 
     if (compared == 0) {
-        HashmapEntry *entry = vector_get(bucket, index);
+        HashmapEntry entry = vector_get(bucket, index, HashmapEntry);
 
-        memcpy(entry->value, value, hashmap->value_size);
+        memcpy(entry.value, value, hashmap->value_size);
     } else {
         HashmapEntry entry;
         entry.key = malloc(hashmap->key_size);
@@ -156,13 +156,13 @@ static void hashmap_bucket_remove(Hashmap *hashmap, Vector *bucket, void *key) {
         return;
     }
 
-    HashmapEntry *entry = vector_get(bucket, index);
+    HashmapEntry entry = vector_get(bucket, index, HashmapEntry);
 
-    int compared = hashmap->compare(key, entry->key);
+    int compared = hashmap->compare(key, entry.key);
 
     if (compared == 0) {
-        free(entry->key);
-        free(entry->value);
+        free(entry.key);
+        free(entry.value);
         vector_remove_at(bucket, index);
     }
 }
@@ -187,14 +187,14 @@ static Optional *hashmap_bucket_get(Hashmap *hashmap, Vector *bucket,
         return result;
     }
 
-    HashmapEntry *entry = vector_get(bucket, index);
+    HashmapEntry entry = vector_get(bucket, index, HashmapEntry);
 
-    int compared = hashmap->compare(key, entry->key);
+    int compared = hashmap->compare(key, entry.key);
 
     if (compared == 0) {
-        HashmapEntry *entry = vector_get(bucket, index);
+        HashmapEntry entry = vector_get(bucket, index, HashmapEntry);
 
-        optional_set(result, entry->value);
+        optional_set(result, entry.value);
     }
 
     return result;
@@ -218,9 +218,9 @@ static bool hashmap_bucket_contains_key(Hashmap *hashmap, Vector *bucket,
         return false;
     }
 
-    HashmapEntry *entry = vector_get(bucket, index);
+    HashmapEntry entry = vector_get(bucket, index, HashmapEntry);
 
-    int compared = hashmap->compare(key, entry->key);
+    int compared = hashmap->compare(key, entry.key);
 
     return compared == 0;
 }
@@ -244,6 +244,25 @@ static int test_compare(void *key1, void *key2) {
     int b = *(int32_t *)key2;
 
     return a < b ? -1 : (a > b ? 1 : 0);
+}
+
+static void hashmap_bucket_foreach(Vector *bucket,
+                                   void (*func)(void *, void *)) {
+    size_t size = vector_size(bucket);
+
+    for (size_t i = 0; i < size; i++) {
+        HashmapEntry entry = vector_get(bucket, i, HashmapEntry);
+
+        func(entry.key, entry.value);
+    }
+}
+
+void hashmap_foreach(Hashmap *hashmap, void (*func)(void *, void *)) {
+    for (size_t i = 0; i < HASHMAP_BUCKET_COUNT; i++) {
+        Vector *bucket = hashmap_get_bucket(hashmap, i);
+
+        hashmap_bucket_foreach(bucket, func);
+    }
 }
 
 TEST(hashmap_new) {
@@ -315,7 +334,7 @@ TEST(hashmap_get) {
     TESTASSERT(The right key should have a value,
                optional_has_value(true_result));
     TESTASSERT(And it should be what was put in,
-               *(int64_t *)optional_value_or(true_result, 0) == value);
+               optional_value_or(true_result, 0, int64_t) == value);
 
     optional_free(true_result);
     optional_free(fake_result);
@@ -327,7 +346,7 @@ TEST(hashmap_get) {
     TESTASSERT(Overwriting the value should be possible,
                optional_has_value(overwrite_result));
     TESTASSERT(And it should be what it was overwritten by,
-               *(int64_t *)optional_value_or(overwrite_result, 0) == value);
+               optional_value_or(overwrite_result, 0, int64_t) == value);
 
     optional_free(overwrite_result);
 

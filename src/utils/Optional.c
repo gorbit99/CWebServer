@@ -38,7 +38,7 @@ bool optional_has_value(Optional *optional) {
     return optional->has_value;
 }
 
-void *optional_value_or(Optional *optional, void *placeholder) {
+void *_optional_value_or_base(Optional *optional, void *placeholder) {
     return optional->has_value ? optional->data : placeholder;
 }
 
@@ -127,13 +127,13 @@ TEST(optional_value_or) {
     int value_or = 5;
 
     TESTASSERT(Without value it should be the or value,
-               *(int *)optional_value_or(optional, &value_or) == 5);
+               *(int *)_optional_value_or_base(optional, &value_or) == 5);
 
     int value = 10;
     optional_set(optional, &value);
 
     TESTASSERT(With value it should be that,
-               *(int *)optional_value_or(optional, &value_or) == 10);
+               *(int *)_optional_value_or_base(optional, &value_or) == 10);
 
     optional_free(optional);
 
