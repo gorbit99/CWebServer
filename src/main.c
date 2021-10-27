@@ -1,4 +1,5 @@
 #include "http/request.h"
+#include "http/response.h"
 #include "http/socket.h"
 #include "tests/framework.h"
 #include "utils/Hashmap.h"
@@ -62,6 +63,13 @@ int main(void) {
         request_free(request);
 
         free(hostname);
+
+        HttpResponseBuilder *response_builder = response_builder_new();
+        String *body = string_from_cstr("Hello World");
+        response_builder_set_body(response_builder, body);
+        HttpResponse *response = response_builder_build(response_builder);
+        response_send_to_connection(response, connection);
+        response_free(response);
 
         connection_free(connection);
     }

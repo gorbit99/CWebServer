@@ -25,7 +25,7 @@ void optional_free(Optional *optional) {
     free(optional);
 }
 
-void optional_set(Optional *optional, void *value) {
+void _optional_set_base(Optional *optional, void *value) {
     memcpy(optional->data, value, optional->data_size);
     optional->has_value = true;
 }
@@ -40,6 +40,12 @@ bool optional_has_value(Optional *optional) {
 
 void *_optional_value_or_base(Optional *optional, void *placeholder) {
     return optional->has_value ? optional->data : placeholder;
+}
+
+void _optional_map_base(Optional *optional, void (*func)(void *)) {
+    if (optional->has_value) {
+        func(optional->data);
+    }
 }
 
 TEST(optional_new) {
@@ -60,7 +66,7 @@ TEST(optional_set) {
 
     Optional *optional = optional_new(int32_t);
     int i = 5;
-    optional_set(optional, &i);
+    _optional_set_base(optional, &i);
 
     TESTASSERT(Optional should have a value, optional->has_value);
     TESTASSERT(The value should be 5, *(int *)optional->data == 5);
@@ -88,7 +94,7 @@ TEST(optional_reset_with_value) {
 
     Optional *optional = optional_new(int32_t);
     int i = 5;
-    optional_set(optional, &i);
+    _optional_set_base(optional, &i);
     optional_reset(optional);
 
     TESTASSERT(Optional shouldnt have a value anymore, !optional->has_value);
@@ -107,7 +113,7 @@ TEST(optional_has_value) {
                !optional_has_value(optional));
 
     int i = 5;
-    optional_set(optional, &i);
+    _optional_set_base(optional, &i);
 
     TESTASSERT(When set it should be true, optional_has_value(optional));
 
@@ -130,7 +136,7 @@ TEST(optional_value_or) {
                *(int *)_optional_value_or_base(optional, &value_or) == 5);
 
     int value = 10;
-    optional_set(optional, &value);
+    _optional_set_base(optional, &value);
 
     TESTASSERT(With value it should be that,
                *(int *)_optional_value_or_base(optional, &value_or) == 10);

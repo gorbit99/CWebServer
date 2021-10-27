@@ -24,17 +24,24 @@ struct Hashmap {
 
     uint64_t (*hash_alg)(void *key);
     int (*compare)(void *key1, void *key2);
+    void (*cleanup_key)(void *key);
+    void (*cleanup_value)(void *value);
 };
 
-Hashmap *_hashmap_new_base(size_t key_size, size_t value_size,
+Hashmap *_hashmap_new_base(size_t key_size,
+                           size_t value_size,
                            uint64_t (*hash_alg)(void *key),
-                           int (*compare)(void *key1, void *key2)) {
+                           int (*compare)(void *key1, void *key2),
+                           void (*cleanup_key)(void *key),
+                           void (*cleanup_value)(void *value)) {
     Hashmap *result = (Hashmap *)malloc(sizeof(Hashmap));
 
     result->key_size = key_size;
     result->value_size = value_size;
     result->hash_alg = hash_alg;
     result->compare = compare;
+    result->cleanup_key = cleanup_key;
+    result->cleanup_value = cleanup_value;
 
     result->buckets = vector_new(Vector *);
     vector_reserve(result->buckets, HASHMAP_BUCKET_COUNT);
@@ -53,10 +60,16 @@ static Vector *hashmap_get_bucket(Hashmap *hashmap, size_t index) {
     return bucket;
 }
 
-void hashmap_bucket_free(Vector *bucket) {
+void hashmap_bucket_free(Hashmap *hashmap, Vector *bucket) {
     for (size_t i = 0; i < vector_size(bucket); i++) {
         HashmapEntry entry = vector_get(bucket, i, HashmapEntry);
 
+        if (hashmap->cleanup_key) {
+            hashmap->cleanup_key(entry.key);
+        }
+        if (hashmap->cleanup_value) {
+            hashmap->cleanup_value(entry.value);
+        }
         free(entry.key);
         free(entry.value);
     }
@@ -68,7 +81,7 @@ void hashmap_free(Hashmap *hashmap) {
     for (size_t i = 0; i < HASHMAP_BUCKET_COUNT; i++) {
         Vector *bucket = hashmap_get_bucket(hashmap, i);
 
-        hashmap_bucket_free(bucket);
+        hashmap_bucket_free(hashmap, bucket);
     }
 
     vector_free(hashmap->buckets);
@@ -76,10 +89,12 @@ void hashmap_free(Hashmap *hashmap) {
     free(hashmap);
 }
 
-static int64_t hashmap_bucket_bin_search(Hashmap *hashmap, Vector *bucket,
-                                         void *key) {
+static bool hashmap_bucket_bin_search(Hashmap *hashmap,
+                                      Vector *bucket,
+                                      void *key,
+                                      size_t *out_index) {
     if (vector_size(bucket) == 0) {
-        return -1;
+        return false;
     }
 
     size_t min_index = 0;
@@ -102,14 +117,17 @@ static int64_t hashmap_bucket_bin_search(Hashmap *hashmap, Vector *bucket,
         }
     }
 
-    return min_index;
+    *out_index = min_index;
+    return true;
 }
 
-static void hashmap_bucket_insert(Hashmap *hashmap, Vector *bucket, void *key,
+static void hashmap_bucket_insert(Hashmap *hashmap,
+                                  Vector *bucket,
+                                  void *key,
                                   void *value) {
-    int64_t index = hashmap_bucket_bin_search(hashmap, bucket, key);
+    size_t index;
 
-    if (index == -1) {
+    if (!hashmap_bucket_bin_search(hashmap, bucket, key, &index)) {
         HashmapEntry entry;
         entry.key = malloc(hashmap->key_size);
         memcpy(entry.key, key, hashmap->key_size);
@@ -127,6 +145,10 @@ static void hashmap_bucket_insert(Hashmap *hashmap, Vector *bucket, void *key,
     if (compared == 0) {
         HashmapEntry entry = vector_get(bucket, index, HashmapEntry);
 
+        if (hashmap->cleanup_value) {
+            hashmap->cleanup_value(entry.value);
+        }
+
         memcpy(entry.value, value, hashmap->value_size);
     } else {
         HashmapEntry entry;
@@ -139,7 +161,7 @@ static void hashmap_bucket_insert(Hashmap *hashmap, Vector *bucket, void *key,
     }
 }
 
-void hashmap_insert(Hashmap *hashmap, void *key, void *value) {
+void _hashmap_insert_base(Hashmap *hashmap, void *key, void *value) {
     uint64_t hash = hashmap->hash_alg(key);
 
     hash %= HASHMAP_BUCKET_COUNT;
@@ -150,9 +172,9 @@ void hashmap_insert(Hashmap *hashmap, void *key, void *value) {
 }
 
 static void hashmap_bucket_remove(Hashmap *hashmap, Vector *bucket, void *key) {
-    int64_t index = hashmap_bucket_bin_search(hashmap, bucket, key);
+    size_t index;
 
-    if (index == -1) {
+    if (!hashmap_bucket_bin_search(hashmap, bucket, key, &index)) {
         return;
     }
 
@@ -161,6 +183,12 @@ static void hashmap_bucket_remove(Hashmap *hashmap, Vector *bucket, void *key) {
     int compared = hashmap->compare(key, entry.key);
 
     if (compared == 0) {
+        if (hashmap->cleanup_key) {
+            hashmap->cleanup_key(entry.key);
+        }
+        if (hashmap->cleanup_value) {
+            hashmap->cleanup_value(entry.value);
+        }
         free(entry.key);
         free(entry.value);
         vector_remove_at(bucket, index);
@@ -177,13 +205,13 @@ void hashmap_remove(Hashmap *hashmap, void *key) {
     hashmap_bucket_remove(hashmap, bucket, key);
 }
 
-static Optional *hashmap_bucket_get(Hashmap *hashmap, Vector *bucket,
-                                    void *key) {
+static Optional *
+        hashmap_bucket_get(Hashmap *hashmap, Vector *bucket, void *key) {
     Optional *result = optional_new(void *);
 
-    int64_t index = hashmap_bucket_bin_search(hashmap, bucket, key);
+    size_t index;
 
-    if (index == -1) {
+    if (!hashmap_bucket_bin_search(hashmap, bucket, key, &index)) {
         return result;
     }
 
@@ -210,11 +238,12 @@ Optional *hashmap_get(Hashmap *hashmap, void *key) {
     return hashmap_bucket_get(hashmap, bucket, key);
 }
 
-static bool hashmap_bucket_contains_key(Hashmap *hashmap, Vector *bucket,
+static bool hashmap_bucket_contains_key(Hashmap *hashmap,
+                                        Vector *bucket,
                                         void *key) {
-    int64_t index = hashmap_bucket_bin_search(hashmap, bucket, key);
+    size_t index;
 
-    if (index == -1) {
+    if (!hashmap_bucket_bin_search(hashmap, bucket, key, &index)) {
         return false;
     }
 
@@ -236,7 +265,7 @@ bool hashmap_contains_key(Hashmap *hashmap, void *key) {
 }
 
 static uint64_t test_hash_alg(void *key) {
-    return *(int32_t *)key;
+    return (uint64_t) * (int32_t *)key;
 }
 
 static int test_compare(void *key1, void *key2) {
@@ -265,11 +294,38 @@ void hashmap_foreach(Hashmap *hashmap, void (*func)(void *, void *)) {
     }
 }
 
+static void
+        hashmap_bucket_foreach_with_data(Vector *bucket,
+                                         void (*func)(void *, void *, void *),
+                                         void *userdata) {
+    size_t size = vector_size(bucket);
+
+    for (size_t i = 0; i < size; i++) {
+        HashmapEntry entry = vector_get(bucket, i, HashmapEntry);
+
+        func(entry.key, entry.value, userdata);
+    }
+}
+
+void hashmap_foreach_with_data(Hashmap *hashmap,
+                               void (*func)(void *, void *, void *),
+                               void *userdata) {
+    for (size_t i = 0; i < HASHMAP_BUCKET_COUNT; i++) {
+        Vector *bucket = hashmap_get_bucket(hashmap, i);
+
+        hashmap_bucket_foreach_with_data(bucket, func, userdata);
+    }
+}
+
 TEST(hashmap_new) {
     STARTTEST();
 
-    Hashmap *hashmap =
-            hashmap_new(int32_t, int64_t, test_hash_alg, test_compare);
+    Hashmap *hashmap = hashmap_new(int32_t,
+                                   int64_t,
+                                   test_hash_alg,
+                                   test_compare,
+                                   NULL,
+                                   NULL);
 
     TESTASSERT(Key size should be 4, hashmap->key_size == 4);
     TESTASSERT(Value size should be 8, hashmap->value_size == 8);
@@ -282,12 +338,16 @@ TEST(hashmap_new) {
 TEST(hashmap_remove) {
     STARTTEST();
 
-    Hashmap *hashmap =
-            hashmap_new(int32_t, int64_t, test_hash_alg, test_compare);
+    Hashmap *hashmap = hashmap_new(int32_t,
+                                   int64_t,
+                                   test_hash_alg,
+                                   test_compare,
+                                   NULL,
+                                   NULL);
 
     int32_t key = 10;
     int64_t value = 100;
-    hashmap_insert(hashmap, &key, &value);
+    _hashmap_insert_base(hashmap, &key, &value);
 
     int32_t fake_key = 11;
 
@@ -317,12 +377,16 @@ TEST(hashmap_remove) {
 TEST(hashmap_get) {
     STARTTEST();
 
-    Hashmap *hashmap =
-            hashmap_new(int32_t, int64_t, test_hash_alg, test_compare);
+    Hashmap *hashmap = hashmap_new(int32_t,
+                                   int64_t,
+                                   test_hash_alg,
+                                   test_compare,
+                                   NULL,
+                                   NULL);
 
     int32_t key = 10;
     int64_t value = 100;
-    hashmap_insert(hashmap, &key, &value);
+    _hashmap_insert_base(hashmap, &key, &value);
 
     int32_t fake_key = 11;
 
@@ -340,7 +404,7 @@ TEST(hashmap_get) {
     optional_free(fake_result);
 
     value = 200;
-    hashmap_insert(hashmap, &key, &value);
+    _hashmap_insert_base(hashmap, &key, &value);
 
     Optional *overwrite_result = hashmap_get(hashmap, &key);
     TESTASSERT(Overwriting the value should be possible,
@@ -358,12 +422,16 @@ TEST(hashmap_get) {
 TEST(hashmap_insert_and_contains_key) {
     STARTTEST();
 
-    Hashmap *hashmap =
-            hashmap_new(int32_t, int64_t, test_hash_alg, test_compare);
+    Hashmap *hashmap = hashmap_new(int32_t,
+                                   int64_t,
+                                   test_hash_alg,
+                                   test_compare,
+                                   NULL,
+                                   NULL);
 
     int32_t key = 10;
     int64_t value = 100;
-    hashmap_insert(hashmap, &key, &value);
+    _hashmap_insert_base(hashmap, &key, &value);
 
     TESTASSERT(Hashmap should contain the key,
                hashmap_contains_key(hashmap, &key));

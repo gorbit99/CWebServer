@@ -29,7 +29,7 @@ struct Connection {
     FILE *file_equivalent;
 };
 
-static int socket_create() {
+static int socket_create(void) {
     int socket_fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 
     if (socket_fd == -1) {
@@ -59,7 +59,7 @@ static struct sockaddr_in socket_create_sockaddr(char *hostname, short port) {
     memset(&sockaddr, 0, sizeof(sockaddr));
 
     sockaddr.sin_family = AF_INET;
-    sockaddr.sin_port = htons(port);
+    sockaddr.sin_port = htons((uint16_t)port);
     sockaddr.sin_addr = ip;
 
     return sockaddr;
@@ -86,7 +86,6 @@ static void socket_set_options(int socket_fd) {
     int value = 1;
     if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(value))
         == -1) {
-        printf("%d\n", errno);
         eprintf("Couldn't set socket option: %s\n", strerror(errno));
         exit(-1);
     }
@@ -131,7 +130,7 @@ Connection *socket_get_connection(Socket *socket) {
     result->fd = connection_fd;
     result->address = addr;
 
-    FILE *file = fdopen(connection_fd, "rw");
+    FILE *file = fdopen(dup(connection_fd), "r+");
     result->file_equivalent = file;
 
     return result;
@@ -167,7 +166,7 @@ int connection_printf(Connection *connection, char *format, ...) {
     va_list args;
     va_start(args, format);
 
-    int res = dprintf(connection->fd, format, args);
+    int res = vfprintf(connection->file_equivalent, format, args);
 
     va_end(args);
 

@@ -1,6 +1,7 @@
 #include "Vector.h"
 
 #include <assert.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -270,7 +271,7 @@ TEST(vector_resize) {
     vector_resize(vector, 10, &filler);
 
     TESTASSERT(The size should be 10, vector->size == 10);
-    for (int i = 3; i < 10; ++i) {
+    for (size_t i = 3; i < 10; ++i) {
         TESTASSERT(Every new element is 54,
                    *(int *)_vector_get_base(vector, i) == 54);
     }

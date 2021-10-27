@@ -1,0 +1,73 @@
+#pragma once
+
+#include "../utils/string.h"
+
+typedef enum HttpResponseCode {
+    HttpContinue = 100,
+    HttpSwitchingProtocols = 101,
+    HttpProcessing = 102,
+    HttpEarlyHints = 103,
+
+    HttpOk = 200,
+    HttpCreated = 201,
+    HttpAccepted = 202,
+    HttpNonAuthorativeInformation = 203,
+    HttpNoContent = 204,
+    HttpResetContent = 205,
+    HttpPartialContent = 206,
+    HttpMultiStatus = 207,
+    HttpAlreadyReported = 208,
+    HttpIMUsed = 226,
+
+    HttpMultipleChoice = 300,
+    HttpMovedPermanently = 301,
+    HttpFound = 302,
+    HttpSeeOther = 303,
+    HttpNotModified = 304,
+    HttpTemporaryRedirect = 307,
+    HttpPermanentRedirect = 308,
+
+    HttpBadRequest = 400,
+    HttpUnathorized = 401,
+    HttpPaymentRequired = 402,
+    HttpForbidden = 403,
+    HttpNotFound = 404,
+    HttpMethodNotAllowed = 405,
+    HttpNotAcceptable = 406,
+    HttpProxyAuthenticationRequired = 407,
+    HttpRequestTimeout = 408,
+    HttpConflict = 409,
+    HttpGone = 410,
+    HttpLengthRequired = 411,
+    HttpPreconditionFailed = 412,
+    HttpPayloadTooLarge = 413,
+    HttpURITooLong = 414,
+    HttpUnsupportedMediatype = 415,
+    HttpRangeNotSatisfiable = 416,
+    HttpExpectationFailed = 417,
+    HttpImATeapot = 418,
+    HttpMisdirectedRequest = 421,
+    HttpUnprocessableEntity = 422,
+    HttpLocked = 423,
+    HttpFailedDependency = 424,
+    HttpTooEarly = 425,
+    HttpUpgradeRequired = 426,
+    HttpPreconditionRequired = 428,
+    HttpTooManyConflicts = 429,
+    HttpRequestHeaderFieldsTooLarge = 431,
+    HttpUnavailableForLegalReasons = 451,
+
+    HttpInternalServerError = 500,
+    HttpNotImplemented = 501,
+    HttpBadGateway = 502,
+    HttpServiceUnavailable = 503,
+    HttpGatewayTimeout = 504,
+    HttpHTTPVersionNotSupported = 505,
+    HttpVariantAlsoNegotiates = 506,
+    HttpInsufficientStorage = 507,
+    HttpLoopDetected = 508,
+    HttpNotExtended = 510,
+    HttpNetworkAuthenticationRequired = 511
+} HttpResponseCode;
+
+String *response_code_as_string(HttpResponseCode response_code);

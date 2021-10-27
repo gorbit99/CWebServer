@@ -2,9 +2,8 @@ cmake_minimum_required(VERSION 3.15)
 
 project(WebServer
     LANGUAGES C
-    DESCRIPTION "An http webserver written entirely in C99"
+    DESCRIPTION "An http webserver written entirely in C11"
     VERSION 0.1.0)
-
 
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
     set(CMAKE_BUILD_TYPE DEBUG)

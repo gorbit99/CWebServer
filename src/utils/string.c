@@ -2,11 +2,14 @@
 
 #include "Vector.h"
 
+#include <assert.h>
+#include <ctype.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 static const size_t STRING_START_CAPACITY = 5;
 
@@ -16,7 +19,7 @@ struct String {
     size_t capacity;
 };
 
-String *string_new() {
+String *string_new(void) {
     String *result = (String *)malloc(sizeof(String));
 
     result->data = (char *)malloc(sizeof(char) * (STRING_START_CAPACITY + 1));
@@ -27,7 +30,7 @@ String *string_new() {
     return result;
 }
 
-String *string_from_cstr(char *str) {
+String *string_from_cstr(const char *str) {
     String *result = (String *)malloc(sizeof(String));
 
     size_t str_len = strlen(str);
@@ -41,7 +44,7 @@ String *string_from_cstr(char *str) {
     return result;
 }
 
-String *string_from_cstr_part(char *str, size_t len) {
+String *string_from_cstr_part(const char *str, size_t len) {
     String *result = (String *)malloc(sizeof(String));
 
     size_t str_len = strlen(str);
@@ -60,7 +63,13 @@ String *string_from_cstr_part(char *str, size_t len) {
     return result;
 }
 
-String *string_read_upto(FILE *file, char *delims) {
+char string_get(String *string, size_t index) {
+    assert(index < string->size);
+
+    return string->data[index];
+}
+
+String *string_read_upto(FILE *file, const char *delims) {
     String *result = string_new();
     char c;
     while (fscanf(file, "%c", &c) != EOF) {
@@ -68,7 +77,7 @@ String *string_read_upto(FILE *file, char *delims) {
             break;
         }
 
-        string_add(result, c);
+        string_push_back(result, c);
     }
 
     return result;
@@ -100,7 +109,7 @@ void string_free(String *string) {
     free(string);
 }
 
-void string_add(String *string, char c) {
+void string_push_back(String *string, char c) {
     if (string->capacity == string->size) {
         string->capacity *= 2;
         string->data = (char *)realloc(string->data,
@@ -120,6 +129,27 @@ void string_pop_back(String *string) {
     string->data[string->size] = '\0';
 }
 
+void string_push_front(String *string, char c) {
+    if (string->capacity == string->size) {
+        string->capacity *= 2;
+        string->data = (char *)realloc(string->data,
+                                       sizeof(char) * (string->capacity + 1));
+    }
+
+    memmove(string->data + 1, string->data, (string->size + 1) * sizeof(char));
+    string->data[0] = c;
+    string->size++;
+}
+
+void string_pop_front(String *string) {
+    if (string->size == 0) {
+        return;
+    }
+    string->size--;
+    memmove(string->data, string->data + 1, (string->size + 1) * sizeof(char));
+    string->data[string->size] = '\0';
+}
+
 void string_concat(String *to, String *from) {
     to->capacity = to->capacity + from->capacity;
     to->data = (char *)realloc(to->data, sizeof(char) * (to->capacity + 1));
@@ -127,7 +157,7 @@ void string_concat(String *to, String *from) {
     strcat(to->data, from->data);
 }
 
-int string_scanf(String *string, char *format, ...) {
+int string_scanf(String *string, const char *format, ...) {
     va_list args;
     va_start(args, format);
 
@@ -142,11 +172,21 @@ int string_strcmp(String *string, String *cmp) {
     return strcmp(string->data, cmp->data);
 }
 
-int string_cstrcmp(String *string, char *cmp) {
+int string_cstrcmp(String *string, const char *cmp) {
     return strcmp(string->data, cmp);
 }
 
-Vector *string_split(String *string, char *separator, bool keep_empty,
+int string_strcmp_case_insensitive(String *string, String *cmp) {
+    return strcasecmp(string->data, cmp->data);
+}
+
+int string_cstrcmp_case_insensitive(String *string, const char *cmp) {
+    return strcasecmp(string->data, cmp);
+}
+
+Vector *string_split(String *string,
+                     const char *separator,
+                     bool keep_empty,
                      size_t max_parts) {
     Vector *result = vector_new(String *);
 
@@ -157,14 +197,16 @@ Vector *string_split(String *string, char *separator, bool keep_empty,
     size_t part_count = 0;
 
     char *next_separator = prev_front;
-    while (next_separator != NULL && part_count != max_parts) {
+    while (next_separator != NULL
+           && (part_count != max_parts || max_parts == 0)) {
         next_separator = strstr(prev_front, separator);
 
         size_t len;
-        if (next_separator == NULL || part_count == max_parts - 1) {
+        if (next_separator == NULL
+            || (max_parts != 0 && part_count == max_parts - 1)) {
             len = strlen(prev_front);
         } else {
-            len = next_separator - prev_front;
+            len = (size_t)(next_separator - prev_front);
         }
 
         if (len == 0 && !keep_empty) {
@@ -195,6 +237,18 @@ void string_map(String *string, char (*func)(char c)) {
 
         str++;
     }
+}
+
+size_t string_size(String *string) {
+    return string->size;
+}
+
+char string_map_tolower(char c) {
+    return (char)tolower(c);
+}
+
+char string_map_toupper(char c) {
+    return (char)toupper(c);
 }
 
 TEST(string_new) {
@@ -299,10 +353,10 @@ TEST(string_add) {
 
     String *string = string_new();
 
-    string_add(string, 'a');
-    string_add(string, 'b');
-    string_add(string, 'c');
-    string_add(string, 'd');
+    string_push_back(string, 'a');
+    string_push_back(string, 'b');
+    string_push_back(string, 'c');
+    string_push_back(string, 'd');
 
     TESTASSERT(String has a length of 4, string->size == 4);
     TESTASSERT(String has 'abcd' in it, strcmp(string->data, "abcd") == 0);
@@ -393,11 +447,11 @@ TEST(string_split) {
     String *original = string_from_cstr("Comma, separated, list");
     char *parts[] = {"Comma", "separated", "list"};
 
-    Vector *split = string_split(original, ", ", true, -1);
+    Vector *split = string_split(original, ", ", true, 0);
 
     TESTASSERT(The result has 3 parts, vector_size(split) == 3);
 
-    for (int i = 0; i < 3; i++) {
+    for (size_t i = 0; i < 3; i++) {
         String *str = vector_get(split, i, String *);
 
         TESTASSERT(The parts match, strcmp(str->data, parts[i]));

@@ -20,9 +20,11 @@ void connection_free(Connection *connection);
 
 char *connection_get_ip(Connection *connection);
 
-int connection_scanf(Connection *connection, char *format, ...);
+int connection_scanf(Connection *connection, char *format, ...)
+        __attribute__((format(scanf, 2, 3)));
 
-int connection_printf(Connection *connection, char *format, ...);
+int connection_printf(Connection *connection, char *format, ...)
+        __attribute__((format(printf, 2, 3)));
 
 String *connection_read_upto(Connection *connection, char *delims);
 

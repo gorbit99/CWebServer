@@ -1,57 +1,23 @@
 #include "request.h"
 
 #include "../utils/Hashmap.h"
+#include "headers.h"
 #include "socket.h"
+#include "verb.h"
+#include "version.h"
 
 #include <ctype.h>
 #include <stdint.h>
 #include <stdlib.h>
 
 struct HttpRequest {
-    String *verb;
+    HttpVerb verb;
     String *target;
-    String *version;
+    HttpVersion version;
     Hashmap *headers;
 
-    String *body;
+    Optional *body;
 };
-
-uint64_t option_hash(void *key) {
-    String *str = *(String **)key;
-
-    char *cstr = string_as_cstr(str);
-
-    uint64_t hash = 0;
-
-    uint64_t cur_part = 0;
-    int part_counter = 0;
-    while (*cstr != '\0') {
-        cur_part = cur_part << 8 | *cstr;
-        part_counter++;
-
-        if (part_counter == 4) {
-            hash ^= cur_part;
-            cur_part = 0;
-            part_counter = 0;
-        }
-        cstr++;
-    }
-
-    hash ^= cur_part;
-
-    return hash;
-}
-
-int option_cmp(void *key1, void *key2) {
-    String *str1 = *(String **)key1;
-    String *str2 = *(String **)key2;
-
-    return string_strcmp(str1, str2);
-}
-
-static char request_option_lowercase(char c) {
-    return tolower(c);
-}
 
 static void request_headers_print(void *key, void *value) {
     String *name = *(String **)key;
@@ -60,13 +26,30 @@ static void request_headers_print(void *key, void *value) {
     printf("[%s]: [%s]\n", string_as_cstr(name), string_as_cstr(set));
 }
 
+static void request_cleanup_headers(void *data) {
+    String *data_string = *(String **)data;
+
+    string_free(data_string);
+}
+
 HttpRequest *request_read(Connection *connection) {
     HttpRequest *result = (HttpRequest *)malloc(sizeof(HttpRequest));
 
-    result->verb = connection_read_word(connection);
+    String *verb_string = connection_read_word(connection);
+    result->verb = verb_from_string(verb_string);
+    string_free(verb_string);
     result->target = connection_read_word(connection);
-    result->version = connection_read_word(connection);
-    result->headers = hashmap_new(String *, String *, option_hash, option_cmp);
+    String *version_string = connection_read_word(connection);
+    result->headers = hashmap_new(String *,
+                                  String *,
+                                  headers_hash,
+                                  headers_cmp,
+                                  request_cleanup_headers,
+                                  request_cleanup_headers);
+
+    result->version = version_from_string(version_string);
+
+    string_free(version_string);
 
     string_free(connection_read_line(connection));
 
@@ -79,9 +62,11 @@ HttpRequest *request_read(Connection *connection) {
         String *key = vector_get(parts, 0, String *);
         String *value = vector_get(parts, 1, String *);
 
-        string_map(key, request_option_lowercase);
+        while (isspace(string_get(value, 0))) {
+            string_pop_front(value);
+        }
 
-        hashmap_insert(result->headers, &key, &value);
+        hashmap_insert(result->headers, key, value);
 
         vector_free(parts);
         string_free(line);
@@ -102,9 +87,11 @@ HttpRequest *request_read(Connection *connection) {
         size_t len;
         string_scanf(content_type, "%lu", &len);
 
-        result->body = connection_read_len(connection, len);
+        String *body_string = connection_read_len(connection, len);
+        result->body = optional_new(String *);
+        optional_set(result->body, body_string);
     } else {
-        result->body = string_new();
+        result->body = optional_new(String *);
     }
 
     optional_free(content_type_value);
@@ -113,31 +100,29 @@ HttpRequest *request_read(Connection *connection) {
 }
 
 void request_print(HttpRequest *request) {
-    printf("Verb: %s\n", string_as_cstr(request->verb));
+    String *verb_string = verb_as_string(request->verb);
+    printf("Verb: %s\n", string_as_cstr(verb_string));
+    string_free(verb_string);
     printf("Target: %s\n", string_as_cstr(request->target));
-    printf("Version: %s\n", string_as_cstr(request->version));
+    String *version_string = version_as_string(request->version);
+    printf("Version: %s\n", string_as_cstr(version_string));
+    string_free(version_string);
 
     hashmap_foreach(request->headers, request_headers_print);
 
-    printf("Body: %s\n", string_as_cstr(request->body));
-}
-
-static void request_option_free(void *key, void *value) {
-    String *name = *(String **)key;
-    String *set = *(String **)value;
-
-    string_free(name);
-    string_free(set);
+    if (optional_has_value(request->body)) {
+        printf("Body: %s\n",
+               string_as_cstr(
+                       optional_value_or(request->body, NULL, String *)));
+    }
 }
 
 void request_free(HttpRequest *request) {
-    string_free(request->verb);
     string_free(request->target);
-    string_free(request->version);
-    hashmap_foreach(request->headers, request_option_free);
     hashmap_free(request->headers);
 
-    string_free(request->body);
+    optional_map(request->body, string_free);
+    optional_free(request->body);
 
     free(request);
 }
