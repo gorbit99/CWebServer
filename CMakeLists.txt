@@ -27,4 +27,42 @@ option(MASOCHISTIC_COMPILATION
     "Compile with -Werror -Wall -Wextra -Wpedantic" 
     ON)
 
+if ("${MASOCHISTIC_COMPILATION}")
+    set(REQUIRED_COMPILE_FLAGS
+        -Wall
+        -Wextra
+        -Wpedantic
+        -Werror
+        -Wconversion
+        -Wold-style-definition
+        -Wdouble-promotion
+        -Wformat=2
+        -Wformat-overflow=2
+        -Wformat-signedness
+        -Wimplicit-fallthrough=2
+        -Wswitch-default
+        -Wshift-overflow=2
+        -Wstringop-overflow=4
+        -Wsuggest-attribute=pure
+        -Wsuggest-attribute=const
+        -Wmissing-noreturn
+        -Wsuggest-attribute=malloc
+        -Wmissing-format-attribute
+        -Wsuggest-attribute=cold
+        -Wduplicated-branches
+        -Wduplicated-cond
+        -Wfloat-equal
+        -Wbad-function-cast
+        -Wcast-qual
+        -Wlogical-op
+        -Wredundant-decls
+        -Wnested-externs
+        -Wunsuffixed-float-constants
+        )
+else()
+    set(REQUIRED_COMPILE_FLAGS)
+endif()
+
+set(OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+
 add_subdirectory("src")
