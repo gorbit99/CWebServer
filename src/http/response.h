@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../utils/string.h"
+#include "cookie.h"
 #include "response_codes.h"
 #include "socket.h"
 #include "version.h"
@@ -40,3 +41,6 @@ void response_builder_remove_body(HttpResponseBuilder *response_builder);
 
 void response_builder_set_status(HttpResponseBuilder *response_builder,
                                  String *status);
+
+void response_builder_add_set_cookie(HttpResponseBuilder *response_builder,
+                                     CookieRequest *cookie_request);

@@ -1,7 +1,9 @@
 #include "response.h"
 
 #include "../utils/Hashmap.h"
+#include "../utils/Vector.h"
 #include "../utils/string.h"
+#include "cookie.h"
 #include "headers.h"
 #include "response_codes.h"
 #include "socket.h"
@@ -17,6 +19,7 @@ struct HttpResponse {
     Hashmap *headers;
 
     Optional *body;
+    Vector *set_cookies;
 };
 
 static void response_print_header(void *key, void *value, void *userdata) {
@@ -30,6 +33,13 @@ static void response_print_header(void *key, void *value, void *userdata) {
                       string_as_cstr(value_string));
 }
 
+static void response_print_set_cookie(void *data, void *userdata) {
+    Connection *connection = (Connection *)userdata;
+    CookieRequest *cookie_request = *(CookieRequest **)data;
+
+    cookie_print_to_connection(cookie_request, connection);
+}
+
 void response_send_to_connection(HttpResponse *response,
                                  Connection *connection) {
     String *version_string = version_as_string(response->version);
@@ -38,16 +48,23 @@ void response_send_to_connection(HttpResponse *response,
                       string_as_cstr(version_string),
                       response->response_code,
                       string_as_cstr(response->status));
+    string_free(version_string);
     hashmap_foreach_with_data(response->headers,
                               response_print_header,
                               connection);
+    vector_foreach_with_data(response->set_cookies,
+                             response_print_set_cookie,
+                             connection);
 
     if (optional_has_value(response->body)) {
         String *body_string = optional_value_or(response->body, NULL, String *);
         connection_printf(connection, "\n%s\n", string_as_cstr(body_string));
     }
+}
 
-    string_free(version_string);
+void response_free_cookie(void *data) {
+    CookieRequest *cookie_request = *(CookieRequest **)data;
+    cookie_request_free(cookie_request);
 }
 
 void response_free(HttpResponse *response) {
@@ -59,6 +76,9 @@ void response_free(HttpResponse *response) {
 
         string_free(value);
     }
+
+    vector_foreach(response->set_cookies, response_free_cookie);
+    vector_free(response->set_cookies);
 
     free(response);
 }
@@ -117,6 +137,8 @@ HttpResponseBuilder *response_builder_new(void) {
     response_builder_add_header(result, "Date", datetime);
     response_builder_add_header(result, "Content-Type", "text/html");
     response_builder_add_header(result, "Server", "GorbitsWebServer");
+
+    result->response->set_cookies = vector_new(CookieRequest *);
 
     return result;
 }
@@ -179,4 +201,9 @@ void response_builder_set_status(HttpResponseBuilder *response_builder,
                                  String *status) {
     string_free(response_builder->response->status);
     response_builder->response->status = status;
+}
+
+void response_builder_add_set_cookie(HttpResponseBuilder *response_builder,
+                                     CookieRequest *cookie_request) {
+    vector_push_back(response_builder->response->set_cookies, &cookie_request);
 }

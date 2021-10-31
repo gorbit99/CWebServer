@@ -37,7 +37,8 @@ void vector_push_back(Vector *vector, void *elem) {
                 realloc(vector->data, vector->data_size * vector->capacity);
     }
 
-    memcpy((char *)vector->data + vector->size * vector->data_size, elem,
+    memcpy((char *)vector->data + vector->size * vector->data_size,
+           elem,
            vector->data_size);
 
     vector->size++;
@@ -54,7 +55,8 @@ void vector_insert(Vector *vector, void *elem, size_t index) {
             (char *)vector->data + index * vector->data_size,
             (vector->size - index) * vector->data_size);
 
-    memcpy((char *)vector->data + index * vector->data_size, elem,
+    memcpy((char *)vector->data + index * vector->data_size,
+           elem,
            vector->data_size);
 
     vector->size++;
@@ -99,7 +101,8 @@ void vector_resize(Vector *vector, size_t size, void *default_value) {
         for (size_t i = 0; i < size - vector->size; ++i) {
             memcpy((char *)vector->data
                            + (vector->size + i) * vector->data_size,
-                   default_value, vector->data_size);
+                   default_value,
+                   vector->data_size);
         }
     }
 
@@ -111,6 +114,17 @@ void vector_foreach(Vector *vector, void (*func)(void *)) {
 
     for (size_t i = 0; i < vector->size; i++) {
         func((void *)steppable);
+        steppable += vector->data_size;
+    }
+}
+
+void vector_foreach_with_data(Vector *vector,
+                              void (*func)(void *, void *),
+                              void *userdata) {
+    char *steppable = (char *)vector->data;
+
+    for (size_t i = 0; i < vector->size; i++) {
+        func((void *)steppable, userdata);
         steppable += vector->data_size;
     }
 }

@@ -33,4 +33,8 @@ void vector_resize(Vector *vector, size_t size, void *default_value);
 
 void vector_foreach(Vector *vector, void (*func)(void *));
 
+void vector_foreach_with_data(Vector *vector,
+                              void (*func)(void *data, void *userdata),
+                              void *userdata);
+
 TEST(vector);

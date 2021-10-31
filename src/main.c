@@ -1,3 +1,4 @@
+#include "http/cookie.h"
 #include "http/request.h"
 #include "http/response.h"
 #include "http/socket.h"
@@ -64,9 +65,17 @@ int main(void) {
 
         free(hostname);
 
+        CookieBuilder *cookie_builder =
+                cookie_builder_new(string_from_cstr("HelloWorld"),
+                                   string_from_cstr("This is my data"));
+        cookie_builder_set_max_age(cookie_builder, 300);
+        cookie_builder_set_same_site(cookie_builder, HttpStrict);
+        CookieRequest *cookie_request = cookie_builder_build(cookie_builder);
+
         HttpResponseBuilder *response_builder = response_builder_new();
         String *body = string_from_cstr("Hello World");
         response_builder_set_body(response_builder, body);
+        response_builder_add_set_cookie(response_builder, cookie_request);
         HttpResponse *response = response_builder_build(response_builder);
         response_send_to_connection(response, connection);
         response_free(response);

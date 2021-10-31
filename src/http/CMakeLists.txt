@@ -7,7 +7,9 @@ add_library(http STATIC
     socket.h
     socket/socket_linux.c
     verb.h verb.c
-    version.h version.c)
+    version.h version.c
+    cookie.h cookie.c
+    )
 
 set_target_properties(http
     PROPERTIES
