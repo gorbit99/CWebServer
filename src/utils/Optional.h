@@ -4,31 +4,93 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdlib.h>
 
-#define optional_new(type) _optional_new_base(sizeof(type))
+#define GLUE(a, b)        a##b
+#define EVAL(a, b)        GLUE(a, b)
+#define GLUE4(a, b, c, d) a##b##c##d
+#define EVAL4(a, b, c, d) GLUE4(a, b, c, d)
+#define FUNC(action)      EVAL4(optional_, NAME, _, action)
+#define OPTIONAL          EVAL(Optional, STRUCTNAME)
 
-#define optional_value_or(optional, placeholder, type) \
-    *(type *)_optional_value_or_base(optional, placeholder)
+#ifdef TYPE
 
-#define optional_map(optional, func) \
-    _optional_map_base(optional, (void (*)(void *))func)
+typedef struct OPTIONAL OPTIONAL;
 
-#define optional_set(optional, value) _optional_set_base(optional, &value)
+#ifdef DECLARE_OPTIONAL
+OPTIONAL *FUNC(new)(void);
 
-typedef struct Optional Optional;
+void FUNC(free)(OPTIONAL *optional);
 
-Optional *_optional_new_base(size_t data_size);
+void FUNC(set)(OPTIONAL *optional, TYPE *value);
 
-void optional_free(Optional *optional);
+void FUNC(reset)(OPTIONAL *optional);
 
-void _optional_set_base(Optional *optional, void *value);
+bool FUNC(has_value)(OPTIONAL *optional);
 
-void optional_reset(Optional *optional);
+TYPE *FUNC(value_or)(OPTIONAL *optional, TYPE *placeholder);
 
-bool optional_has_value(Optional *optional);
+void FUNC(map)(OPTIONAL *optional, void (*func)(TYPE *val));
 
-void *_optional_value_or_base(Optional *optional, void *placeholder);
+#undef DECLARE_OPTIOPTIONAL
+#endif // DECLARE_OPTIONAL
 
-void _optional_map_base(Optional *optional, void (*func)(void *val));
+#ifdef IMPLEMENT_OPTIONAL
+
+struct OPTIONAL {
+    TYPE *data;
+    bool has_value;
+};
+
+OPTIONAL *FUNC(new)(void) {
+    OPTIONAL *result = (OPTIONAL *)malloc(sizeof(OPTIONAL));
+    result->data = (TYPE *)malloc(sizeof(TYPE));
+    result->has_value = false;
+
+    return result;
+}
+
+void FUNC(free)(OPTIONAL *optional) {
+    free(optional->data);
+    free(optional);
+}
+
+void FUNC(set)(OPTIONAL *optional, TYPE *value) {
+    *optional->data = *value;
+    optional->has_value = true;
+}
+
+void FUNC(reset)(OPTIONAL *optional) {
+    optional->has_value = false;
+}
+
+bool FUNC(has_value)(OPTIONAL *optional) {
+    return optional->has_value;
+}
+
+TYPE *FUNC(value_or)(OPTIONAL *optional, TYPE *placeholder) {
+    return optional->has_value ? optional->data : placeholder;
+}
+
+void FUNC(map)(OPTIONAL *optional, void (*func)(TYPE *val)) {
+    if (optional->has_value) {
+        func(optional->data);
+    }
+}
+
+#undef IMPLEMENT_OPTIONAL
+#endif // IMPLEMENT_OPTIONAL
+
+#undef TYPE
+#undef NAME
+#undef STRUCTNAME
+
+#undef GLUE
+#undef EVAL
+#undef GLUE4
+#undef EVAL4
+#undef FUNC
+#undef OPTIONAL
+#endif // TYPE
 
 TEST(optional);

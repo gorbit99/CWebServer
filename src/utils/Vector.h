@@ -5,6 +5,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+#ifdef TYPE
+
 #define GLUE(a, b)        a##b
 #define EVAL(a, b)        GLUE(a, b)
 #define GLUE4(a, b, c, d) a##b##c##d
@@ -12,10 +14,7 @@
 #define FUNC(action)      EVAL4(vector_, NAME, _, action)
 #define VECTOR            EVAL(Vector, STRUCTNAME)
 
-#ifdef TYPE
-
 #ifdef DECLARE_VECTOR
-
 typedef struct VECTOR VECTOR;
 
 VECTOR *FUNC(new)(void);
@@ -45,7 +44,7 @@ void FUNC(foreach_with_data)(VECTOR *vector,
                              void *userdata);
 
 #undef DECLARE_VECTOR
-#endif // DECLARE_VECTOR
+#endif
 
 #ifdef IMPLEMENT_VECTOR
 
@@ -70,6 +69,7 @@ VECTOR *FUNC(new)(void) {
 
 void FUNC(free)(VECTOR *vector) {
     free(vector->data);
+    free(vector);
 }
 
 void FUNC(push_back)(VECTOR *vector, TYPE *elem) {
@@ -161,6 +161,13 @@ void FUNC(foreach_with_data)(VECTOR *vector,
 #undef TYPE
 #undef NAME
 #undef STRUCTNAME
+
+#undef GLUE
+#undef EVAL
+#undef GLUE4
+#undef EVAL4
+#undef FUNC
+#undef VECTOR
 #endif // TYPE
 
 #ifndef VECTOR_TEST

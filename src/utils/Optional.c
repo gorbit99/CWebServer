@@ -1,147 +1,108 @@
-#include "Optional.h"
-
 #include <memory.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 
-struct Optional {
-    void *data;
-    size_t data_size;
-    bool has_value;
-};
+#define TYPE       int
+#define NAME       int
+#define STRUCTNAME Int
+#define IMPLEMENT_OPTIONAL
+#include "Optional.h"
 
-Optional *_optional_new_base(size_t data_size) {
-    Optional *result = (Optional *)malloc(sizeof(Optional));
-    result->data = malloc(data_size);
-    result->data_size = data_size;
-    result->has_value = false;
-
-    return result;
-}
-
-void optional_free(Optional *optional) {
-    free(optional->data);
-    free(optional);
-}
-
-void _optional_set_base(Optional *optional, void *value) {
-    memcpy(optional->data, value, optional->data_size);
-    optional->has_value = true;
-}
-
-void optional_reset(Optional *optional) {
-    optional->has_value = false;
-}
-
-bool optional_has_value(Optional *optional) {
-    return optional->has_value;
-}
-
-void *_optional_value_or_base(Optional *optional, void *placeholder) {
-    return optional->has_value ? optional->data : placeholder;
-}
-
-void _optional_map_base(Optional *optional, void (*func)(void *)) {
-    if (optional->has_value) {
-        func(optional->data);
-    }
-}
-
-TEST(optional_new) {
+TEST(optional_int_new) {
     STARTTEST();
 
-    Optional *optional = optional_new(int32_t);
+    OptionalInt *optional = optional_int_new();
 
-    TESTASSERT(Data size should be 4, optional->data_size == 4);
-    TESTASSERT(Optional shouldnt have value, !optional->has_value);
+    TESTASSERT(OptionalInt shouldnt have value, !optional->has_value);
 
-    optional_free(optional);
+    optional_int_free(optional);
 
     ENDTEST();
 }
 
-TEST(optional_set) {
+TEST(optional_int_set) {
     STARTTEST();
 
-    Optional *optional = optional_new(int32_t);
+    OptionalInt *optional = optional_int_new();
     int i = 5;
-    _optional_set_base(optional, &i);
+    optional_int_set(optional, &i);
 
-    TESTASSERT(Optional should have a value, optional->has_value);
+    TESTASSERT(OptionalInt should have a value, optional->has_value);
     TESTASSERT(The value should be 5, *(int *)optional->data == 5);
 
-    optional_free(optional);
+    optional_int_free(optional);
 
     ENDTEST();
 }
 
-TEST(optional_reset_without_value) {
+TEST(optional_int_reset_without_value) {
     STARTTEST();
 
-    Optional *optional = optional_new(int32_t);
-    optional_reset(optional);
+    OptionalInt *optional = optional_int_new();
+    optional_int_reset(optional);
 
-    TESTASSERT(Optional still shouldnt have a value, !optional->has_value);
+    TESTASSERT(OptionalInt still shouldnt have a value, !optional->has_value);
 
-    optional_free(optional);
+    optional_int_free(optional);
 
     ENDTEST();
 }
 
-TEST(optional_reset_with_value) {
+TEST(optional_int_reset_with_value) {
     STARTTEST();
 
-    Optional *optional = optional_new(int32_t);
+    OptionalInt *optional = optional_int_new();
     int i = 5;
-    _optional_set_base(optional, &i);
-    optional_reset(optional);
+    optional_int_set(optional, &i);
+    optional_int_reset(optional);
 
-    TESTASSERT(Optional shouldnt have a value anymore, !optional->has_value);
+    TESTASSERT(OptionalInt shouldnt have a value anymore, !optional->has_value);
 
-    optional_free(optional);
+    optional_int_free(optional);
 
     ENDTEST();
 }
 
-TEST(optional_has_value) {
+TEST(optional_int_has_value) {
     STARTTEST();
 
-    Optional *optional = optional_new(int32_t);
+    OptionalInt *optional = optional_int_new();
 
     TESTASSERT(At the beginning it should be false,
-               !optional_has_value(optional));
+               !optional_int_has_value(optional));
 
     int i = 5;
-    _optional_set_base(optional, &i);
+    optional_int_set(optional, &i);
 
-    TESTASSERT(When set it should be true, optional_has_value(optional));
+    TESTASSERT(When set it should be true, optional_int_has_value(optional));
 
-    optional_reset(optional);
+    optional_int_reset(optional);
 
-    TESTASSERT(When reset it should be false, !optional_has_value(optional));
+    TESTASSERT(When reset it should be false,
+               !optional_int_has_value(optional));
 
-    optional_free(optional);
+    optional_int_free(optional);
 
     ENDTEST();
 }
 
-TEST(optional_value_or) {
+TEST(optional_int_value_or) {
     STARTTEST();
 
-    Optional *optional = optional_new(int32_t);
+    OptionalInt *optional = optional_int_new();
     int value_or = 5;
 
     TESTASSERT(Without value it should be the or value,
-               *(int *)_optional_value_or_base(optional, &value_or) == 5);
+               *optional_int_value_or(optional, &value_or) == 5);
 
     int value = 10;
-    _optional_set_base(optional, &value);
+    optional_int_set(optional, &value);
 
     TESTASSERT(With value it should be that,
-               *(int *)_optional_value_or_base(optional, &value_or) == 10);
+               *optional_int_value_or(optional, &value_or) == 10);
 
-    optional_free(optional);
+    optional_int_free(optional);
 
     ENDTEST();
 }
@@ -149,14 +110,14 @@ TEST(optional_value_or) {
 TEST(optional) {
     STARTTEST();
 
-    RUNTEST(optional_new);
-    RUNTEST(optional_set);
-    RUNTEST(optional_reset_without_value);
-    RUNTEST(optional_reset_with_value);
-    RUNTEST(optional_has_value);
-    RUNTEST(optional_value_or);
+    RUNTEST(optional_int_new);
+    RUNTEST(optional_int_set);
+    RUNTEST(optional_int_reset_without_value);
+    RUNTEST(optional_int_reset_with_value);
+    RUNTEST(optional_int_has_value);
+    RUNTEST(optional_int_value_or);
 
-    PRINTTESTSUITE(Optional);
+    PRINTTESTSUITE(OptionalInt);
 
     ENDTEST();
 }

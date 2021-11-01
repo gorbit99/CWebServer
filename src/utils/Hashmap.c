@@ -1,7 +1,6 @@
 #include "Hashmap.h"
 
 #include "../tests/framework.h"
-#include "Optional.h"
 
 #include <memory.h>
 #include <stddef.h>
@@ -212,9 +211,9 @@ void hashmap_remove(Hashmap *hashmap, void *key) {
     hashmap_bucket_remove(hashmap, bucket, key);
 }
 
-static Optional *
+static OptionalVoid *
         hashmap_bucket_get(Hashmap *hashmap, VectorBucket *bucket, void *key) {
-    Optional *result = optional_new(void *);
+    OptionalVoid *result = optional_void_new();
 
     size_t index;
 
@@ -227,13 +226,13 @@ static Optional *
     int compared = hashmap->compare(key, entry->key);
 
     if (compared == 0) {
-        _optional_set_base(result, entry->value);
+        optional_void_set(result, entry->value);
     }
 
     return result;
 }
 
-Optional *_hashmap_get_base(Hashmap *hashmap, void *key) {
+OptionalVoid *_hashmap_get_base(Hashmap *hashmap, void *key) {
     uint64_t hash = hashmap->hash_alg(key);
 
     hash %= HASHMAP_BUCKET_COUNT;
@@ -395,29 +394,29 @@ TEST(hashmap_get) {
 
     int32_t fake_key = 11;
 
-    Optional *true_result = hashmap_get(hashmap, key);
-    Optional *fake_result = hashmap_get(hashmap, fake_key);
+    OptionalVoid *true_result = hashmap_get(hashmap, key);
+    OptionalVoid *fake_result = hashmap_get(hashmap, fake_key);
 
     TESTASSERT(The wrong key shouldnt have a value,
-               !optional_has_value(fake_result));
+               !optional_void_has_value(fake_result));
     TESTASSERT(The right key should have a value,
-               optional_has_value(true_result));
+               optional_void_has_value(true_result));
     TESTASSERT(And it should be what was put in,
-               optional_value_or(true_result, 0, int64_t) == value);
+               *(int64_t *)optional_void_value_or(true_result, 0) == value);
 
-    optional_free(true_result);
-    optional_free(fake_result);
+    optional_void_free(true_result);
+    optional_void_free(fake_result);
 
     value = 200;
     _hashmap_insert_base(hashmap, &key, &value);
 
-    Optional *overwrite_result = hashmap_get(hashmap, key);
+    OptionalVoid *overwrite_result = hashmap_get(hashmap, key);
     TESTASSERT(Overwriting the value should be possible,
-               optional_has_value(overwrite_result));
+               optional_void_has_value(overwrite_result));
     TESTASSERT(And it should be what it was overwritten by,
-               optional_value_or(overwrite_result, 0, int64_t) == value);
+               *(int *)optional_void_value_or(overwrite_result, 0) == value);
 
-    optional_free(overwrite_result);
+    optional_void_free(overwrite_result);
 
     hashmap_free(hashmap);
 

@@ -1,7 +1,6 @@
 #include "string.h"
 
 #include "Vector.h"
-#include "cleanup.h"
 
 #include <assert.h>
 #include <ctype.h>
@@ -18,6 +17,11 @@
 #define STRUCTNAME String
 #define IMPLEMENT_VECTOR
 #include "Vector.h"
+#define TYPE       String *
+#define NAME       string
+#define STRUCTNAME String
+#define IMPLEMENT_VECTOR
+#include "Optional.h"
 
 static const size_t STRING_START_CAPACITY = 5;
 

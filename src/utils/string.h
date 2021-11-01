@@ -13,6 +13,10 @@ typedef struct String String;
 #define STRUCTNAME String
 #define DECLARE_VECTOR
 #include "Vector.h"
+#define TYPE       String *
+#define NAME       string
+#define STRUCTNAME String
+#include "Optional.h"
 
 String *string_new(void);
 

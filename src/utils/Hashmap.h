@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Optional.h"
-
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -23,6 +21,13 @@
 
 #define hashmap_get(hashmap, key) _hashmap_get_base(hashmap, &key);
 
+#define TYPE       void *
+#define NAME       void
+#define STRUCTNAME Void
+#define DECLARE_OPTIONAL
+#define IMPLEMENT_OPTIONAL
+#include "Optional.h"
+
 typedef struct Hashmap Hashmap;
 
 Hashmap *_hashmap_new_base(size_t key_size,
@@ -38,7 +43,7 @@ void _hashmap_insert_base(Hashmap *hashmap, void *key, void *value);
 
 void hashmap_remove(Hashmap *hashmap, void *key);
 
-Optional *_hashmap_get_base(Hashmap *hashmap, void *key);
+OptionalVoid *_hashmap_get_base(Hashmap *hashmap, void *key);
 
 bool hashmap_contains_key(Hashmap *hashmap, void *key);
 
