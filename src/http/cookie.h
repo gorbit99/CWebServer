@@ -46,3 +46,7 @@ void cookie_builder_set_same_site(CookieBuilder *cookie_builder,
                                   HttpSameSite value);
 
 CookieRequest *cookie_builder_build(CookieBuilder *cookie_builder);
+
+uint64_t cookie_hash(void *data);
+
+int cookie_cmp(void *key1, void *key2);

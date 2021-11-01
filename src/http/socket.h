@@ -33,3 +33,5 @@ String *connection_read_line(Connection *connection);
 String *connection_read_word(Connection *connection);
 
 String *connection_read_len(Connection *connection, size_t len);
+
+void connection_discard_data(Connection *connection);

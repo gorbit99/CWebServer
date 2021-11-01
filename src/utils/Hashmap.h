@@ -21,6 +21,8 @@
 #define hashmap_insert(hashmap, key, value) \
     _hashmap_insert_base(hashmap, &key, &value)
 
+#define hashmap_get(hashmap, key) _hashmap_get_base(hashmap, &key);
+
 typedef struct Hashmap Hashmap;
 
 Hashmap *_hashmap_new_base(size_t key_size,
@@ -36,7 +38,7 @@ void _hashmap_insert_base(Hashmap *hashmap, void *key, void *value);
 
 void hashmap_remove(Hashmap *hashmap, void *key);
 
-Optional *hashmap_get(Hashmap *hashmap, void *key);
+Optional *_hashmap_get_base(Hashmap *hashmap, void *key);
 
 bool hashmap_contains_key(Hashmap *hashmap, void *key);
 

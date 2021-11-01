@@ -1,11 +1,13 @@
 #include "string.h"
 
 #include "Vector.h"
+#include "cleanup.h"
 
 #include <assert.h>
 #include <ctype.h>
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -239,6 +241,33 @@ void string_map(String *string, char (*func)(char c)) {
     }
 }
 
+void string_trim(String *string) {
+    if (string->size == 0) {
+        return;
+    }
+
+    size_t start = 0;
+    while (isspace(string->data[start])) {
+        start++;
+    }
+
+    if (string->data[start] == '\0') {
+        string->data[0] = '\0';
+        string->size = 0;
+        return;
+    }
+
+    size_t end = string->size - 1;
+    while (isspace(string->data[end])) {
+        end--;
+    }
+    end++;
+
+    memmove(string->data, string->data + start, (end - start) * sizeof(char));
+    string->data[end - start] = '\0';
+    string->size = end - start;
+}
+
 size_t string_size(String *string) {
     return string->size;
 }
@@ -249,6 +278,31 @@ char string_map_tolower(char c) {
 
 char string_map_toupper(char c) {
     return (char)toupper(c);
+}
+
+uint64_t string_hash(void *data) {
+    String *string = *(String **)data;
+    uint64_t hash = 0;
+
+    uint64_t current = 0;
+    for (size_t i = 0; i < string->size; i++) {
+        uint64_t converted = (uint64_t)string->data[i] & 0xff;
+
+        current = current << 8 | converted;
+
+        if (i % 4 == 3) {
+            hash ^= current;
+            current = 0;
+        }
+    }
+    return hash;
+}
+
+int string_cmp(void *key1, void *key2) {
+    String *a = *(String **)key1;
+    String *b = *(String **)key2;
+
+    return string_strcmp(a, b);
 }
 
 TEST(string_new) {

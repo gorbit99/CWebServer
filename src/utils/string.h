@@ -60,11 +60,17 @@ char *string_as_cstr(String *string);
 
 void string_map(String *string, char (*func)(char c));
 
+void string_trim(String *string);
+
 // TODO Test
 size_t string_size(String *string);
 
 char string_map_tolower(char c);
 
 char string_map_toupper(char c);
+
+uint64_t string_hash(void *data);
+
+int string_cmp(void *key1, void *key2);
 
 TEST(string);

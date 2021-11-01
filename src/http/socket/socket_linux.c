@@ -188,3 +188,7 @@ String *connection_read_word(Connection *connection) {
 String *connection_read_len(Connection *connection, size_t len) {
     return string_read_len(connection->file_equivalent, len);
 }
+
+void connection_discard_data(Connection *connection) {
+    fseek(connection->file_equivalent, 0, SEEK_END);
+}

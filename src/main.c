@@ -68,7 +68,7 @@ int main(void) {
         CookieBuilder *cookie_builder =
                 cookie_builder_new(string_from_cstr("HelloWorld"),
                                    string_from_cstr("This is my data"));
-        cookie_builder_set_max_age(cookie_builder, 300);
+        cookie_builder_set_max_age(cookie_builder, 10000);
         cookie_builder_set_same_site(cookie_builder, HttpStrict);
         CookieRequest *cookie_request = cookie_builder_build(cookie_builder);
 

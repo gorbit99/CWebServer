@@ -13,7 +13,7 @@ struct Optional {
 
 Optional *_optional_new_base(size_t data_size) {
     Optional *result = (Optional *)malloc(sizeof(Optional));
-    result->data = malloc(sizeof(data_size));
+    result->data = malloc(data_size);
     result->data_size = data_size;
     result->has_value = false;
 

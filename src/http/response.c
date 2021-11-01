@@ -2,6 +2,7 @@
 
 #include "../utils/Hashmap.h"
 #include "../utils/Vector.h"
+#include "../utils/cleanup.h"
 #include "../utils/string.h"
 #include "cookie.h"
 #include "headers.h"
@@ -71,11 +72,8 @@ void response_free(HttpResponse *response) {
     string_free(response->status);
     hashmap_free(response->headers);
 
-    if (optional_has_value(response->body)) {
-        String *value = optional_value_or(response->body, NULL, String *);
-
-        string_free(value);
-    }
+    optional_map(response->body, cleanup_string);
+    optional_free(response->body);
 
     vector_foreach(response->set_cookies, response_free_cookie);
     vector_free(response->set_cookies);

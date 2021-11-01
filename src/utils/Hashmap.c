@@ -54,13 +54,7 @@ Hashmap *_hashmap_new_base(size_t key_size,
     return result;
 }
 
-static Vector *hashmap_get_bucket(Hashmap *hashmap, size_t index) {
-    Vector *bucket = vector_get(hashmap->buckets, index, Vector *);
-
-    return bucket;
-}
-
-void hashmap_bucket_free(Hashmap *hashmap, Vector *bucket) {
+static void hashmap_bucket_free(Hashmap *hashmap, Vector *bucket) {
     for (size_t i = 0; i < vector_size(bucket); i++) {
         HashmapEntry entry = vector_get(bucket, i, HashmapEntry);
 
@@ -79,7 +73,7 @@ void hashmap_bucket_free(Hashmap *hashmap, Vector *bucket) {
 
 void hashmap_free(Hashmap *hashmap) {
     for (size_t i = 0; i < HASHMAP_BUCKET_COUNT; i++) {
-        Vector *bucket = hashmap_get_bucket(hashmap, i);
+        Vector *bucket = vector_get(hashmap->buckets, i, Vector *);
 
         hashmap_bucket_free(hashmap, bucket);
     }
@@ -166,7 +160,7 @@ void _hashmap_insert_base(Hashmap *hashmap, void *key, void *value) {
 
     hash %= HASHMAP_BUCKET_COUNT;
 
-    Vector *bucket = hashmap_get_bucket(hashmap, hash);
+    Vector *bucket = vector_get(hashmap->buckets, hash, Vector *);
 
     hashmap_bucket_insert(hashmap, bucket, key, value);
 }
@@ -200,7 +194,7 @@ void hashmap_remove(Hashmap *hashmap, void *key) {
 
     hash %= HASHMAP_BUCKET_COUNT;
 
-    Vector *bucket = hashmap_get_bucket(hashmap, hash);
+    Vector *bucket = vector_get(hashmap->buckets, hash, Vector *);
 
     hashmap_bucket_remove(hashmap, bucket, key);
 }
@@ -220,20 +214,18 @@ static Optional *
     int compared = hashmap->compare(key, entry.key);
 
     if (compared == 0) {
-        HashmapEntry entry = vector_get(bucket, index, HashmapEntry);
-
-        optional_set(result, entry.value);
+        _optional_set_base(result, entry.value);
     }
 
     return result;
 }
 
-Optional *hashmap_get(Hashmap *hashmap, void *key) {
+Optional *_hashmap_get_base(Hashmap *hashmap, void *key) {
     uint64_t hash = hashmap->hash_alg(key);
 
     hash %= HASHMAP_BUCKET_COUNT;
 
-    Vector *bucket = hashmap_get_bucket(hashmap, hash);
+    Vector *bucket = vector_get(hashmap->buckets, hash, Vector *);
 
     return hashmap_bucket_get(hashmap, bucket, key);
 }
@@ -259,7 +251,7 @@ bool hashmap_contains_key(Hashmap *hashmap, void *key) {
 
     hash %= HASHMAP_BUCKET_COUNT;
 
-    Vector *bucket = hashmap_get_bucket(hashmap, hash);
+    Vector *bucket = vector_get(hashmap->buckets, hash, Vector *);
 
     return hashmap_bucket_contains_key(hashmap, bucket, key);
 }
@@ -288,7 +280,7 @@ static void hashmap_bucket_foreach(Vector *bucket,
 
 void hashmap_foreach(Hashmap *hashmap, void (*func)(void *, void *)) {
     for (size_t i = 0; i < HASHMAP_BUCKET_COUNT; i++) {
-        Vector *bucket = hashmap_get_bucket(hashmap, i);
+        Vector *bucket = vector_get(hashmap->buckets, i, Vector *);
 
         hashmap_bucket_foreach(bucket, func);
     }
@@ -311,7 +303,7 @@ void hashmap_foreach_with_data(Hashmap *hashmap,
                                void (*func)(void *, void *, void *),
                                void *userdata) {
     for (size_t i = 0; i < HASHMAP_BUCKET_COUNT; i++) {
-        Vector *bucket = hashmap_get_bucket(hashmap, i);
+        Vector *bucket = vector_get(hashmap->buckets, i, Vector *);
 
         hashmap_bucket_foreach_with_data(bucket, func, userdata);
     }
@@ -390,8 +382,8 @@ TEST(hashmap_get) {
 
     int32_t fake_key = 11;
 
-    Optional *true_result = hashmap_get(hashmap, &key);
-    Optional *fake_result = hashmap_get(hashmap, &fake_key);
+    Optional *true_result = hashmap_get(hashmap, key);
+    Optional *fake_result = hashmap_get(hashmap, fake_key);
 
     TESTASSERT(The wrong key shouldnt have a value,
                !optional_has_value(fake_result));
@@ -406,7 +398,7 @@ TEST(hashmap_get) {
     value = 200;
     _hashmap_insert_base(hashmap, &key, &value);
 
-    Optional *overwrite_result = hashmap_get(hashmap, &key);
+    Optional *overwrite_result = hashmap_get(hashmap, key);
     TESTASSERT(Overwriting the value should be possible,
                optional_has_value(overwrite_result));
     TESTASSERT(And it should be what it was overwritten by,

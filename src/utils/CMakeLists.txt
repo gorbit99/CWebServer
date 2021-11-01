@@ -5,6 +5,7 @@ add_library(utils STATIC
     Optional.h Optional.c
     string.h string.c
     Vector.h Vector.c
+    cleanup.h cleanup.c
     )
 
 target_link_libraries(utils PRIVATE tests)
