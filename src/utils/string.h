@@ -8,6 +8,12 @@
 
 typedef struct String String;
 
+#define TYPE       String *
+#define NAME       string
+#define STRUCTNAME String
+#define DECLARE_VECTOR
+#include "Vector.h"
+
 String *string_new(void);
 
 String *string_from_cstr(const char *str);
@@ -51,10 +57,11 @@ int string_strcmp_case_insensitive(String *string, String *cmp);
 
 // TODO TEST
 int string_cstrcmp_case_insensitive(String *string, const char *cmp);
-Vector *string_split(String *string,
-                     const char *separator,
-                     bool keep_empty,
-                     size_t max_parts);
+
+VectorString *string_split(String *string,
+                           const char *separator,
+                           bool keep_empty,
+                           size_t max_parts);
 
 char *string_as_cstr(String *string);
 

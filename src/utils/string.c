@@ -13,6 +13,12 @@
 #include <string.h>
 #include <strings.h>
 
+#define TYPE       String *
+#define NAME       string
+#define STRUCTNAME String
+#define IMPLEMENT_VECTOR
+#include "Vector.h"
+
 static const size_t STRING_START_CAPACITY = 5;
 
 struct String {
@@ -186,11 +192,11 @@ int string_cstrcmp_case_insensitive(String *string, const char *cmp) {
     return strcasecmp(string->data, cmp);
 }
 
-Vector *string_split(String *string,
-                     const char *separator,
-                     bool keep_empty,
-                     size_t max_parts) {
-    Vector *result = vector_new(String *);
+VectorString *string_split(String *string,
+                           const char *separator,
+                           bool keep_empty,
+                           size_t max_parts) {
+    VectorString *result = vector_string_new();
 
     size_t sep_len = strlen(separator);
 
@@ -218,7 +224,7 @@ Vector *string_split(String *string,
 
         String *part = string_from_cstr_part(prev_front, len);
 
-        vector_push_back(result, &part);
+        vector_string_push_back(result, &part);
         part_count++;
 
         prev_front += len + sep_len;
@@ -501,12 +507,12 @@ TEST(string_split) {
     String *original = string_from_cstr("Comma, separated, list");
     char *parts[] = {"Comma", "separated", "list"};
 
-    Vector *split = string_split(original, ", ", true, 0);
+    VectorString *split = string_split(original, ", ", true, 0);
 
-    TESTASSERT(The result has 3 parts, vector_size(split) == 3);
+    TESTASSERT(The result has 3 parts, vector_string_size(split) == 3);
 
     for (size_t i = 0; i < 3; i++) {
-        String *str = vector_get(split, i, String *);
+        String *str = *vector_string_get(split, i);
 
         TESTASSERT(The parts match, strcmp(str->data, parts[i]));
 
@@ -514,7 +520,7 @@ TEST(string_split) {
     }
 
     string_free(original);
-    vector_free(split);
+    vector_string_free(split);
 
     ENDTEST();
 }

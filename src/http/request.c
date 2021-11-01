@@ -60,23 +60,23 @@ HttpRequest *request_read(Connection *connection) {
     while (string_cstrcmp(line, "\r") != 0) {
         string_pop_back(line);
 
-        Vector *parts = string_split(line, ":", false, 2);
+        VectorString *parts = string_split(line, ":", false, 2);
 
-        if (vector_size(parts) != 2) {
+        if (vector_string_size(parts) != 2) {
             printf("Invalid header format: %s\n", string_as_cstr(line));
-            vector_foreach(parts, cleanup_string);
+            vector_string_foreach(parts, (void (*)(String **))cleanup_string);
             string_free(line);
             continue;
         }
 
-        String *key = vector_get(parts, 0, String *);
-        String *value = vector_get(parts, 1, String *);
+        String *key = *vector_string_get(parts, 0);
+        String *value = *vector_string_get(parts, 1);
 
         string_trim(value);
 
         hashmap_insert(result->headers, key, value);
 
-        vector_free(parts);
+        vector_string_free(parts);
         string_free(line);
         line = connection_read_line(connection);
     }
@@ -108,27 +108,29 @@ HttpRequest *request_read(Connection *connection) {
     Optional *cookie_header = hashmap_get(result->headers, cookie_key);
     if (optional_has_value(cookie_header)) {
         String *cookies = optional_value_or(cookie_header, NULL, String *);
-        Vector *cookie_pairs = string_split(cookies, "; ", false, 0);
+        VectorString *cookie_pairs = string_split(cookies, "; ", false, 0);
 
-        for (size_t i = 0; i < vector_size(cookie_pairs); i++) {
-            String *cookie = vector_get(cookie_pairs, i, String *);
-            Vector *pair = string_split(cookie, "=", false, 2);
+        for (size_t i = 0; i < vector_string_size(cookie_pairs); i++) {
+            String *cookie = *vector_string_get(cookie_pairs, i);
+            VectorString *pair = string_split(cookie, "=", false, 2);
 
-            if (vector_size(pair) != 2) {
+            if (vector_string_size(pair) != 2) {
                 printf("Invalid cookie format received: %s\n",
                        string_as_cstr(cookie));
-                vector_foreach(pair, cleanup_string);
+                vector_string_foreach(pair,
+                                      (void (*)(String **))cleanup_string);
             } else {
-                String *key = vector_get(pair, 0, String *);
-                String *value = vector_get(pair, 1, String *);
+                String *key = *vector_string_get(pair, 0);
+                String *value = *vector_string_get(pair, 1);
 
                 hashmap_insert(result->cookies, key, value);
             }
-            vector_free(pair);
+            vector_string_free(pair);
         }
 
-        vector_foreach(cookie_pairs, cleanup_string);
-        vector_free(cookie_pairs);
+        vector_string_foreach(cookie_pairs,
+                              (void (*)(String **))cleanup_string);
+        vector_string_free(cookie_pairs);
     }
     optional_free(cookie_header);
     string_free(cookie_key);

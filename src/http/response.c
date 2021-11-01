@@ -1,7 +1,6 @@
 #include "response.h"
 
 #include "../utils/Hashmap.h"
-#include "../utils/Vector.h"
 #include "../utils/cleanup.h"
 #include "../utils/string.h"
 #include "cookie.h"
@@ -20,7 +19,7 @@ struct HttpResponse {
     Hashmap *headers;
 
     Optional *body;
-    Vector *set_cookies;
+    VectorCookieRequest *set_cookies;
 };
 
 static void response_print_header(void *key, void *value, void *userdata) {
@@ -34,9 +33,9 @@ static void response_print_header(void *key, void *value, void *userdata) {
                       string_as_cstr(value_string));
 }
 
-static void response_print_set_cookie(void *data, void *userdata) {
+static void response_print_set_cookie(CookieRequest *cookie_request,
+                                      void *userdata) {
     Connection *connection = (Connection *)userdata;
-    CookieRequest *cookie_request = *(CookieRequest **)data;
 
     cookie_print_to_connection(cookie_request, connection);
 }
@@ -53,9 +52,9 @@ void response_send_to_connection(HttpResponse *response,
     hashmap_foreach_with_data(response->headers,
                               response_print_header,
                               connection);
-    vector_foreach_with_data(response->set_cookies,
-                             response_print_set_cookie,
-                             connection);
+    vector_cookie_request_foreach_with_data(response->set_cookies,
+                                            response_print_set_cookie,
+                                            connection);
 
     if (optional_has_value(response->body)) {
         String *body_string = optional_value_or(response->body, NULL, String *);
@@ -63,8 +62,7 @@ void response_send_to_connection(HttpResponse *response,
     }
 }
 
-void response_free_cookie(void *data) {
-    CookieRequest *cookie_request = *(CookieRequest **)data;
+void response_free_cookie(CookieRequest *cookie_request) {
     cookie_request_free(cookie_request);
 }
 
@@ -75,8 +73,8 @@ void response_free(HttpResponse *response) {
     optional_map(response->body, cleanup_string);
     optional_free(response->body);
 
-    vector_foreach(response->set_cookies, response_free_cookie);
-    vector_free(response->set_cookies);
+    vector_cookie_request_foreach(response->set_cookies, response_free_cookie);
+    vector_cookie_request_free(response->set_cookies);
 
     free(response);
 }
@@ -136,7 +134,7 @@ HttpResponseBuilder *response_builder_new(void) {
     response_builder_add_header(result, "Content-Type", "text/html");
     response_builder_add_header(result, "Server", "GorbitsWebServer");
 
-    result->response->set_cookies = vector_new(CookieRequest *);
+    result->response->set_cookies = vector_cookie_request_new();
 
     return result;
 }
@@ -203,5 +201,6 @@ void response_builder_set_status(HttpResponseBuilder *response_builder,
 
 void response_builder_add_set_cookie(HttpResponseBuilder *response_builder,
                                      CookieRequest *cookie_request) {
-    vector_push_back(response_builder->response->set_cookies, &cookie_request);
+    vector_cookie_request_push_back(response_builder->response->set_cookies,
+                                    cookie_request);
 }

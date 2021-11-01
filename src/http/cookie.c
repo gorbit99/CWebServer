@@ -19,6 +19,12 @@ struct CookieRequest {
     HttpSameSite same_site;
 };
 
+#define TYPE       CookieRequest
+#define NAME       cookie_request
+#define STRUCTNAME CookieRequest
+#define IMPLEMENT_VECTOR
+#include "../utils/Vector.h"
+
 static void cookie_free_optional_string(void *data) {
     String *string = *(String **)data;
     string_free(string);

@@ -7,6 +7,12 @@
 
 typedef struct CookieRequest CookieRequest;
 
+#define TYPE       CookieRequest
+#define NAME       cookie_request
+#define STRUCTNAME CookieRequest
+#define DECLARE_VECTOR
+#include "../utils/Vector.h"
+
 void cookie_request_free(CookieRequest *cookie_request);
 
 void cookie_print_to_connection(CookieRequest *cookie_request,

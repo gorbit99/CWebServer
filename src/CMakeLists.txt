@@ -30,3 +30,5 @@ set_target_properties(test
     )
 
 target_compile_options(test PRIVATE -g ${REQUIRED_COMPILE_FLAGS})
+
+target_link_libraries(test PRIVATE http tests utils)
