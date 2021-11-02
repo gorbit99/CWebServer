@@ -7,9 +7,9 @@
 
 typedef struct CookieRequest CookieRequest;
 
-#define TYPE       CookieRequest
-#define NAME       cookie_request
-#define STRUCTNAME CookieRequest
+#define VECTORTYPE       CookieRequest
+#define VECTORFUNCNAME   cookie_request
+#define VECTORSTRUCTNAME CookieRequest
 #define DECLARE_VECTOR
 #include "../utils/Vector.h"
 

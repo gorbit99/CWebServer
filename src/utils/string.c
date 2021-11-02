@@ -1,7 +1,5 @@
 #include "string.h"
 
-#include "Vector.h"
-
 #include <assert.h>
 #include <ctype.h>
 #include <stdarg.h>
@@ -12,15 +10,15 @@
 #include <string.h>
 #include <strings.h>
 
-#define TYPE       String *
-#define NAME       string
-#define STRUCTNAME String
+#define VECTORTYPE       String *
+#define VECTORFUNCNAME   string
+#define VECTORSTRUCTNAME String
 #define IMPLEMENT_VECTOR
 #include "Vector.h"
-#define TYPE       String *
-#define NAME       string
-#define STRUCTNAME String
-#define IMPLEMENT_VECTOR
+#define OPTIONALTYPE       String *
+#define OPTIONALFUNCNAME   string
+#define OPTIONALSTRUCTNAME String
+#define IMPLEMENT_OPTIONAL
 #include "Optional.h"
 
 static const size_t STRING_START_CAPACITY = 5;
@@ -290,8 +288,8 @@ char string_map_toupper(char c) {
     return (char)toupper(c);
 }
 
-uint64_t string_hash(void *data) {
-    String *string = *(String **)data;
+uint64_t string_hash(String **data) {
+    String *string = *data;
     uint64_t hash = 0;
 
     uint64_t current = 0;
@@ -308,9 +306,9 @@ uint64_t string_hash(void *data) {
     return hash;
 }
 
-int string_cmp(void *key1, void *key2) {
-    String *a = *(String **)key1;
-    String *b = *(String **)key2;
+int string_cmp(String **key1, String **key2) {
+    String *a = *key1;
+    String *b = *key2;
 
     return string_strcmp(a, b);
 }

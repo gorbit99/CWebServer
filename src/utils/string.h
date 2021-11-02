@@ -1,21 +1,20 @@
 #pragma once
 
-#include "Vector.h"
-
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 
 typedef struct String String;
 
-#define TYPE       String *
-#define NAME       string
-#define STRUCTNAME String
+#define VECTORTYPE       String *
+#define VECTORFUNCNAME   string
+#define VECTORSTRUCTNAME String
 #define DECLARE_VECTOR
 #include "Vector.h"
-#define TYPE       String *
-#define NAME       string
-#define STRUCTNAME String
+#define OPTIONALTYPE       String *
+#define OPTIONALFUNCNAME   string
+#define OPTIONALSTRUCTNAME String
+#define DECLARE_OPTIONAL
 #include "Optional.h"
 
 String *string_new(void);
@@ -80,8 +79,8 @@ char string_map_tolower(char c);
 
 char string_map_toupper(char c);
 
-uint64_t string_hash(void *data);
+uint64_t string_hash(String **data);
 
-int string_cmp(void *key1, void *key2);
+int string_cmp(String **key1, String **key2);
 
 TEST(string);

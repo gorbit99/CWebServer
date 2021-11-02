@@ -1,6 +1,6 @@
-#define TYPE       int
-#define NAME       int
-#define STRUCTNAME Int
+#define VECTORTYPE       int
+#define VECTORFUNCNAME   int
+#define VECTORSTRUCTNAME Int
 #define DECLARE_VECTOR
 #define IMPLEMENT_VECTOR
 #include "Vector.h"

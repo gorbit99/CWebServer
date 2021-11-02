@@ -1,9 +1,9 @@
 #include "request.h"
 
-#include "../utils/Hashmap.h"
 #include "../utils/cleanup.h"
 #include "headers.h"
 #include "socket.h"
+#include "string.h"
 #include "verb.h"
 #include "version.h"
 
@@ -15,15 +15,15 @@ struct HttpRequest {
     HttpVerb verb;
     String *target;
     HttpVersion version;
-    Hashmap *headers;
-    Hashmap *cookies;
+    HashmapStringString *headers;
+    HashmapStringString *cookies;
 
-    Optional *body;
+    OptionalString *body;
 };
 
-static void request_headers_print(void *key, void *value) {
-    String *name = *(String **)key;
-    String *set = *(String **)value;
+static void request_headers_print(String **key, String **value) {
+    String *name = *key;
+    String *set = *value;
 
     printf("[%s]: [%s]\n", string_as_cstr(name), string_as_cstr(set));
 }
@@ -36,19 +36,15 @@ HttpRequest *request_read(Connection *connection) {
     string_free(verb_string);
     result->target = connection_read_word(connection);
     String *version_string = connection_read_word(connection);
-    result->headers = hashmap_new(String *,
-                                  String *,
-                                  headers_hash,
-                                  headers_cmp,
-                                  cleanup_string,
-                                  cleanup_string);
+    result->headers = hashmap_string_string_new(headers_hash,
+                                                headers_cmp,
+                                                cleanup_string,
+                                                cleanup_string);
 
-    result->cookies = hashmap_new(String *,
-                                  String *,
-                                  string_hash,
-                                  string_cmp,
-                                  cleanup_string,
-                                  cleanup_string);
+    result->cookies = hashmap_string_string_new(string_hash,
+                                                string_cmp,
+                                                cleanup_string,
+                                                cleanup_string);
 
     result->version = version_from_string(version_string);
 
@@ -74,7 +70,7 @@ HttpRequest *request_read(Connection *connection) {
 
         string_trim(value);
 
-        hashmap_insert(result->headers, key, value);
+        hashmap_string_string_insert(result->headers, &key, &value);
 
         vector_string_free(parts);
         string_free(line);
@@ -84,30 +80,33 @@ HttpRequest *request_read(Connection *connection) {
     string_free(line);
 
     String *content_type_key = string_from_cstr("content-length");
-    Optional *content_type_value =
-            hashmap_get(result->headers, content_type_key);
+    OptionalValueStringString *content_type_value =
+            hashmap_string_string_get(result->headers, &content_type_key);
     string_free(content_type_key);
 
-    if (optional_has_value(content_type_value)) {
+    if (optional_value_string_string_has_value(content_type_value)) {
         String *content_type =
-                optional_value_or(content_type_value, NULL, String *);
+                *optional_value_string_string_value_or(content_type_value,
+                                                       NULL);
 
         size_t len;
         string_scanf(content_type, "%lu", &len);
 
         String *body_string = connection_read_len(connection, len);
-        result->body = optional_new(String *);
-        optional_set(result->body, body_string);
+        result->body = optional_string_new();
+        optional_string_set(result->body, &body_string);
     } else {
-        result->body = optional_new(String *);
+        result->body = optional_string_new();
     }
 
-    optional_free(content_type_value);
+    optional_value_string_string_free(content_type_value);
 
     String *cookie_key = string_from_cstr("Cookie");
-    Optional *cookie_header = hashmap_get(result->headers, cookie_key);
-    if (optional_has_value(cookie_header)) {
-        String *cookies = optional_value_or(cookie_header, NULL, String *);
+    OptionalValueStringString *cookie_header =
+            hashmap_string_string_get(result->headers, &cookie_key);
+    if (optional_value_string_string_has_value(cookie_header)) {
+        String *cookies =
+                *optional_value_string_string_value_or(cookie_header, NULL);
         VectorString *cookie_pairs = string_split(cookies, "; ", false, 0);
 
         for (size_t i = 0; i < vector_string_size(cookie_pairs); i++) {
@@ -123,7 +122,7 @@ HttpRequest *request_read(Connection *connection) {
                 String *key = *vector_string_get(pair, 0);
                 String *value = *vector_string_get(pair, 1);
 
-                hashmap_insert(result->cookies, key, value);
+                hashmap_string_string_insert(result->cookies, &key, &value);
             }
             vector_string_free(pair);
         }
@@ -132,7 +131,7 @@ HttpRequest *request_read(Connection *connection) {
                               (void (*)(String **))cleanup_string);
         vector_string_free(cookie_pairs);
     }
-    optional_free(cookie_header);
+    optional_value_string_string_free(cookie_header);
     string_free(cookie_key);
 
     connection_discard_data(connection);
@@ -149,23 +148,22 @@ void request_print(HttpRequest *request) {
     printf("Version: %s\n", string_as_cstr(version_string));
     string_free(version_string);
 
-    hashmap_foreach(request->headers, request_headers_print);
+    hashmap_string_string_foreach(request->headers, request_headers_print);
 
-    if (optional_has_value(request->body)) {
+    if (optional_string_has_value(request->body)) {
         printf("Body: %s\n",
-               string_as_cstr(
-                       optional_value_or(request->body, NULL, String *)));
+               string_as_cstr(*optional_string_value_or(request->body, NULL)));
     }
 }
 
 void request_free(HttpRequest *request) {
     string_free(request->target);
-    hashmap_free(request->headers);
+    hashmap_string_string_free(request->headers);
 
-    optional_map(request->body, string_free);
-    optional_free(request->body);
+    optional_string_map(request->body, cleanup_string);
+    optional_string_free(request->body);
 
-    hashmap_free(request->cookies);
+    hashmap_string_string_free(request->cookies);
 
     free(request);
 }

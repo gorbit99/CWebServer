@@ -55,7 +55,6 @@ if ("${MASOCHISTIC_COMPILATION}")
         -Wbad-function-cast
         -Wcast-qual
         -Wlogical-op
-        -Wredundant-decls
         -Wnested-externs
         -Wunsuffixed-float-constants
         )

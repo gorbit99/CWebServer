@@ -4,8 +4,6 @@
 #include "http/socket.h"
 #include "tests/framework.h"
 #include "utils/Hashmap.h"
-#include "utils/Optional.h"
-#include "utils/Vector.h"
 #include "utils/string.h"
 
 #include <assert.h>

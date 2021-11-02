@@ -1,11 +1,5 @@
 #include "cleanup.h"
 
-void cleanup_string(void *data) {
-    String *string = *(String **)data;
-    string_free(string);
-}
-
-void cleanup_hashmap(void *data) {
-    Hashmap *hashmap = *(Hashmap **)data;
-    hashmap_free(hashmap);
+void cleanup_string(String **data) {
+    string_free(*data);
 }

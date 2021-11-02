@@ -3,9 +3,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define TYPE       int
-#define NAME       int
-#define STRUCTNAME Int
+#define OPTIONALTYPE       int
+#define OPTIONALFUNCNAME   int
+#define OPTIONALSTRUCTNAME Int
 #define IMPLEMENT_OPTIONAL
 #include "Optional.h"
 

@@ -1,11 +1,16 @@
 #include "headers.h"
 
-#include "../utils/string.h"
-
 #include <ctype.h>
 
-uint64_t headers_hash(void *key) {
-    String *str = *(String **)key;
+#define HASHMAPKEYTYPE    String *
+#define HASHMAPVALUETYPE  String *
+#define HASHMAPFUNCNAME   string_string
+#define HASHMAPSTRUCTNAME StringString
+#define IMPLEMENT_HASHMAP
+#include "../utils/Hashmap.h"
+
+uint64_t headers_hash(String **key) {
+    String *str = *key;
 
     char *cstr = string_as_cstr(str);
 
@@ -31,9 +36,9 @@ uint64_t headers_hash(void *key) {
     return hash;
 }
 
-int headers_cmp(void *key1, void *key2) {
-    String *str1 = *(String **)key1;
-    String *str2 = *(String **)key2;
+int headers_cmp(String **key1, String **key2) {
+    String *str1 = *key1;
+    String *str2 = *key2;
 
     return string_strcmp_case_insensitive(str1, str2);
 }

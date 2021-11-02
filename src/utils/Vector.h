@@ -5,14 +5,17 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-#ifdef TYPE
+#if !defined(VECTORTYPE) || !defined(VECTORFUNCNAME) \
+        || !defined(VECTORSTRUCTNAME)
+#error Invalid Vector include!
+#endif
 
 #define GLUE(a, b)        a##b
 #define EVAL(a, b)        GLUE(a, b)
 #define GLUE4(a, b, c, d) a##b##c##d
 #define EVAL4(a, b, c, d) GLUE4(a, b, c, d)
-#define FUNC(action)      EVAL4(vector_, NAME, _, action)
-#define VECTOR            EVAL(Vector, STRUCTNAME)
+#define FUNC(action)      EVAL4(vector_, VECTORFUNCNAME, _, action)
+#define VECTOR            EVAL(Vector, VECTORSTRUCTNAME)
 
 #ifdef DECLARE_VECTOR
 typedef struct VECTOR VECTOR;
@@ -21,26 +24,26 @@ VECTOR *FUNC(new)(void);
 
 void FUNC(free)(VECTOR *vector);
 
-void FUNC(push_back)(VECTOR *vector, TYPE *elem);
+void FUNC(push_back)(VECTOR *vector, VECTORTYPE *elem);
 
-void FUNC(insert)(VECTOR *vector, TYPE *elem, size_t index);
+void FUNC(insert)(VECTOR *vector, VECTORTYPE *elem, size_t index);
 
 void FUNC(pop_back)(VECTOR *vector);
 
 void FUNC(remove_at)(VECTOR *vector, size_t index);
 
-TYPE *FUNC(get)(VECTOR *vector, size_t index);
+VECTORTYPE *FUNC(get)(VECTOR *vector, size_t index);
 
 size_t FUNC(size)(VECTOR *vector);
 
 void FUNC(reserve)(VECTOR *vector, size_t capacity);
 
-void FUNC(resize)(VECTOR *vector, size_t size, TYPE *default_value);
+void FUNC(resize)(VECTOR *vector, size_t size, VECTORTYPE *default_value);
 
-void FUNC(foreach)(VECTOR *vector, void (*func)(TYPE *t));
+void FUNC(foreach)(VECTOR *vector, void (*func)(VECTORTYPE *t));
 
 void FUNC(foreach_with_data)(VECTOR *vector,
-                             void (*func)(TYPE *t, void *userdata),
+                             void (*func)(VECTORTYPE *t, void *userdata),
                              void *userdata);
 
 #undef DECLARE_VECTOR
@@ -54,14 +57,15 @@ void FUNC(foreach_with_data)(VECTOR *vector,
 #define VECTOR_START_CAPACITY 5
 
 typedef struct VECTOR {
-    TYPE *data;
+    VECTORTYPE *data;
     size_t size;
     size_t capacity;
 } VECTOR;
 
 VECTOR *FUNC(new)(void) {
     VECTOR *result = (VECTOR *)malloc(sizeof(VECTOR));
-    result->data = (TYPE *)malloc(sizeof(TYPE) * VECTOR_START_CAPACITY),
+    result->data =
+            (VECTORTYPE *)malloc(sizeof(VECTORTYPE) * VECTOR_START_CAPACITY),
     result->capacity = VECTOR_START_CAPACITY, result->size = 0;
 
     return result;
@@ -72,25 +76,27 @@ void FUNC(free)(VECTOR *vector) {
     free(vector);
 }
 
-void FUNC(push_back)(VECTOR *vector, TYPE *elem) {
+void FUNC(push_back)(VECTOR *vector, VECTORTYPE *elem) {
     if (vector->capacity == vector->size) {
         vector->capacity *= 2;
-        vector->data = realloc(vector->data, sizeof(TYPE) * vector->capacity);
+        vector->data =
+                realloc(vector->data, sizeof(VECTORTYPE) * vector->capacity);
     }
 
     vector->data[vector->size] = *elem;
     vector->size++;
 }
 
-void FUNC(insert)(VECTOR *vector, TYPE *elem, size_t index) {
+void FUNC(insert)(VECTOR *vector, VECTORTYPE *elem, size_t index) {
     if (vector->capacity == vector->size) {
         vector->capacity *= 2;
-        vector->data = realloc(vector->data, sizeof(TYPE) * vector->capacity);
+        vector->data =
+                realloc(vector->data, sizeof(VECTORTYPE) * vector->capacity);
     }
 
-    memmove((char *)vector->data + (index + 1) * sizeof(TYPE),
-            (char *)vector->data + index * sizeof(TYPE),
-            (vector->size - index) * sizeof(TYPE));
+    memmove((char *)vector->data + (index + 1) * sizeof(VECTORTYPE),
+            (char *)vector->data + index * sizeof(VECTORTYPE),
+            (vector->size - index) * sizeof(VECTORTYPE));
 
     vector->data[index] = *elem;
 
@@ -102,14 +108,14 @@ void FUNC(pop_back)(VECTOR *vector) {
 }
 
 void FUNC(remove_at)(VECTOR *vector, size_t index) {
-    memmove((char *)vector->data + index * sizeof(TYPE),
-            (char *)vector->data + (index + 1) * sizeof(TYPE),
-            (vector->size - index - 1) * sizeof(TYPE));
+    memmove((char *)vector->data + index * sizeof(VECTORTYPE),
+            (char *)vector->data + (index + 1) * sizeof(VECTORTYPE),
+            (vector->size - index - 1) * sizeof(VECTORTYPE));
 
     vector->size--;
 }
 
-TYPE *FUNC(get)(VECTOR *vector, size_t index) {
+VECTORTYPE *FUNC(get)(VECTOR *vector, size_t index) {
     assert(vector->size > index);
 
     return &vector->data[index];
@@ -124,12 +130,12 @@ void FUNC(reserve)(VECTOR *vector, size_t capacity) {
         return;
     }
 
-    vector->data = realloc(vector->data, capacity * sizeof(TYPE));
+    vector->data = realloc(vector->data, capacity * sizeof(VECTORTYPE));
 
     vector->capacity = capacity;
 }
 
-void FUNC(resize)(VECTOR *vector, size_t size, TYPE *default_value) {
+void FUNC(resize)(VECTOR *vector, size_t size, VECTORTYPE *default_value) {
     FUNC(reserve)(vector, size);
 
     if (vector->size < size) {
@@ -141,14 +147,14 @@ void FUNC(resize)(VECTOR *vector, size_t size, TYPE *default_value) {
     vector->size = size;
 }
 
-void FUNC(foreach)(VECTOR *vector, void (*func)(TYPE *t)) {
+void FUNC(foreach)(VECTOR *vector, void (*func)(VECTORTYPE *t)) {
     for (size_t i = 0; i < vector->size; ++i) {
         func(&vector->data[i]);
     }
 }
 
 void FUNC(foreach_with_data)(VECTOR *vector,
-                             void (*func)(TYPE *t, void *userdata),
+                             void (*func)(VECTORTYPE *t, void *userdata),
                              void *userdata) {
     for (size_t i = 0; i < vector->size; ++i) {
         func(&vector->data[i], userdata);
@@ -158,9 +164,9 @@ void FUNC(foreach_with_data)(VECTOR *vector,
 #undef IMPLEMENT_VECTOR
 #endif // IMPLEMENT_VECTOR
 
-#undef TYPE
-#undef NAME
-#undef STRUCTNAME
+#undef VECTORTYPE
+#undef VECTORFUNCNAME
+#undef VECTORSTRUCTNAME
 
 #undef GLUE
 #undef EVAL
@@ -168,7 +174,6 @@ void FUNC(foreach_with_data)(VECTOR *vector,
 #undef EVAL4
 #undef FUNC
 #undef VECTOR
-#endif // TYPE
 
 #ifndef VECTOR_TEST
 #define VECTOR_TEST
